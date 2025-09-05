@@ -1,34 +1,25 @@
 HELP.md
+# Pastas de build
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# Configurações do IntelliJ
+.idea/
 *.iml
 *.ipr
+*.iws
+
+# Arquivos de ambiente / credenciais
 *.env
+.env.local
+.env.*
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Logs e arquivos temporários
+*.log
+*.tmp
 
-### VS Code ###
-.vscode/
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
