@@ -7,11 +7,10 @@ import lombok.*;
 
 @Entity
 @Table(name = "users")
-@Data // gera getters, setters, toString, equals e hashCode
-@NoArgsConstructor // gera construtor vazio
+@Getter
+@Setter
 @AllArgsConstructor // gera construtor com todos os campos
-@Builder // opcional: permite usar o padrão Builder
-public class Users {
+public class Usuarios {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,13 +23,20 @@ public class Users {
     private String email;
 
     @Column(nullable = false)
-    private String password; // armazene o hash
+    private String password;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String bio;
 
-    @Column(name = "created_at", nullable = false)
-    @Builder.Default // usado para inicialização com Builder
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    // Define automaticamente o createdAt na criação da entidade
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Usuarios() {}
 }
 
