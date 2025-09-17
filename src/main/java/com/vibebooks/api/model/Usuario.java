@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "usuarios")
@@ -29,7 +30,8 @@ public class Usuario {
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 
-    @Column(name = "data_criacao", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @CreationTimestamp // <-- USE ESTA ANOTAÇÃO
+    @Column(name = "data_criacao")
     private OffsetDateTime dataCriacao;
 }
 
