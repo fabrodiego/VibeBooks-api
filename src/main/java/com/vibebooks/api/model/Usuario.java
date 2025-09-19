@@ -36,7 +36,7 @@ public class Usuario implements UserDetails {
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 
-    @CreationTimestamp // <-- USE ESTA ANOTAÇÃO
+    @CreationTimestamp
     @Column(name = "data_criacao")
     private OffsetDateTime dataCriacao;
 
