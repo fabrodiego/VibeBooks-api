@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "comentarios")
@@ -31,6 +32,13 @@ public class Comentario {
     @JoinColumn(name = "livro_id", nullable = false)
     private Livro livro;
 
-    @Column(name = "data_criacao", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @CreationTimestamp
+    @Column(name = "data_criacao", nullable = false, updatable = false)
     private OffsetDateTime dataCriacao;
+
+    public Comentario (String texto, Usuario usuario, Livro livro) {
+        this.texto = texto;
+        this.usuario = usuario;
+        this.livro = livro;
+    }
 }

@@ -1,13 +1,19 @@
 package com.vibebooks.api.controller;
 
+import com.vibebooks.api.dto.ComentarioCadastroDTO; // Importe o DTO
+import com.vibebooks.api.dto.ComentarioDetalhesDTO; // Importe o DTO
 import com.vibebooks.api.dto.LivroCadastroDTO;
 import com.vibebooks.api.dto.LivroDetalhesDTO;
+import com.vibebooks.api.model.Comentario; // Importe o model
 import com.vibebooks.api.model.Livro;
+import com.vibebooks.api.model.Usuario; // Importe o model
+import com.vibebooks.api.repository.ComentarioRepository; // Importe o repository
 import com.vibebooks.api.repository.LivroRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication; // Importe o Authentication
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -20,6 +26,9 @@ public class LivroController {
 
     @Autowired
     private LivroRepository livroRepository;
+
+    @Autowired
+    private ComentarioRepository comentarioRepository;
 
     @PostMapping
     @Transactional
@@ -100,5 +109,26 @@ public class LivroController {
 
         // 4. Retornamos o status 204 No Content
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/comentarios")
+    @Transactional
+    public ResponseEntity<ComentarioDetalhesDTO> adicionarComentario(
+            @PathVariable UUID id,
+            @RequestBody @Valid ComentarioCadastroDTO dados,
+            Authentication authentication,
+            UriComponentsBuilder uriBuilder
+    ) {
+        var livro = livroRepository.getReferenceById(id);
+
+        Usuario usuarioLogado = (Usuario)  authentication.getPrincipal();
+
+        var comentario = new Comentario(dados.texto(), usuarioLogado, livro);
+
+        var comentarioSalvo = comentarioRepository.saveAndFlush(comentario);
+
+        var uri = uriBuilder.path("/api/comentarios/{id}").buildAndExpand(comentarioSalvo.getId()).toUri();
+
+        return ResponseEntity.created(uri).body(new ComentarioDetalhesDTO(comentarioSalvo));
     }
 }
