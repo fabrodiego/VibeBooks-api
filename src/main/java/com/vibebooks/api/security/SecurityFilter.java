@@ -6,6 +6,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,11 +16,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.UUID;
 
 @Component
-public class SecurityFilter extends OncePerRequestFilter{
+public class SecurityFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
+    private static final String AUTH_HEADER = "Authorization";
+    private static final String TOKEN_PREFIX = "Bearer ";
 
     @Autowired
     private TokenService tokenService;
@@ -30,54 +35,45 @@ public class SecurityFilter extends OncePerRequestFilter{
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println("\n=====================================");
-        System.out.println("FILTRO ACIONADO PARA A ROTA: " + request.getRequestURI());
+        logger.debug("Filtro de segurança acionado para a rota: {}", request.getRequestURI());
 
         String tokenJWT = recuperarToken(request);
 
         if (tokenJWT != null) {
-            System.out.println("[ETAPA 1 SUCESSO] Token recuperado do cabeçalho: " + tokenJWT.substring(0, 15) + "..."); // Mostra só o início
             try {
                 String subject = tokenService.getSubject(tokenJWT);
-                System.out.println("[ETAPA 2 SUCESSO] Subject (ID do usuário) extraído: " + subject);
+                logger.debug("Subject (ID do usuário) extraído do token: {}", subject);
 
                 UUID usuarioId = UUID.fromString(subject);
-                System.out.println("[ETAPA 3 SUCESSO] String do Subject convertida para UUID.");
 
                 UserDetails usuario = usuarioRepository.findById(usuarioId)
                         .orElseThrow(() -> new RuntimeException("Usuário do token não encontrado no banco de dados"));
 
-                System.out.println("[ETAPA 4 SUCESSO] Usuário encontrado no banco: " + usuario.getUsername());
+                logger.info("Usuário '{}' encontrado. Autenticando...", usuario.getUsername());
 
                 var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                System.out.println("[ETAPA 5 SUCESSO] Usuário autenticado e definido no contexto de segurança.");
+                logger.info("Usuário '{}' autenticado com sucesso e definido no Contexto de Segurança.", usuario.getUsername());
 
             } catch (Exception e) {
-                System.err.println("[FALHA EM UMA DAS ETAPAS] ERRO: " + e.getClass().getName() + " - " + e.getMessage());
+                // É uma boa prática limpar o contexto de segurança em caso de erro na validação do token.
+                SecurityContextHolder.clearContext();
+                logger.error("Falha na validação do token JWT: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             }
-        } else {
-            System.err.println("[FALHA NA ETAPA 1] Nenhum token JWT encontrado no cabeçalho Authorization após verificação robusta.");
         }
+        // Se o tokenJWT for nulo, não fazemos nada. A requisição continua na cadeia de filtros.
+        // Se o endpoint for protegido, o Spring Security irá bloqueá-lo.
+        // Se for um endpoint público, será permitido. Isso evita o log desnecessário.
 
         filterChain.doFilter(request, response);
-        System.out.println("Filtro finalizado.");
-        System.out.println("=====================================");
+        logger.debug("Filtro de segurança finalizado para a rota: {}", request.getRequestURI());
     }
 
     private String recuperarToken(HttpServletRequest request) {
-        var headersNames = request.getHeaderNames();
-        if (headersNames != null) {
-            while (headersNames.hasMoreElements()) {
-                String headerName = headersNames.nextElement();
-                if (headerName.equalsIgnoreCase("Authorization")) {
-                    String authorizationHeader = request.getHeader(headerName);
-                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                        return authorizationHeader.substring(7);
-                    }
-                }
-            }
+        String authorizationHeader = request.getHeader(AUTH_HEADER);
+        if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_PREFIX)) {
+            return authorizationHeader.substring(TOKEN_PREFIX.length());
         }
         return null;
     }
