@@ -15,6 +15,6 @@ public record BookCreationDTO(
 
         Integer publicationYear,
 
-        String coverUrl
+        String coverImageUrl
 ) {
 }

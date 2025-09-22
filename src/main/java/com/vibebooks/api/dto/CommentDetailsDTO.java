@@ -21,7 +21,7 @@ public record CommentDetailsDTO(
                 comment.getId(),
                 comment.getText(),
                 comment.getUser().getUsername(),
-                comment.getCreationDate()
+                comment.getCreatedAt()
         );
     }
 }
