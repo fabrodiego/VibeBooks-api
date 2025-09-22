@@ -42,8 +42,8 @@ public class UserBookStatus {
     private BookSentiment sentiment;
 
     @org.hibernate.annotations.UpdateTimestamp
-    @Column(name = "update_date")
-    private OffsetDateTime updateDate;
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 
     @Column(name = "liked", nullable = false)
     private boolean liked = false;

@@ -33,8 +33,8 @@ public class Comment {
     private Book book;
 
     @CreationTimestamp
-    @Column(name = "creation_date", nullable = false, updatable = false)
-    private OffsetDateTime creationDate;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
 
     public Comment (String text, User user, Book book) {
         this.text = text;

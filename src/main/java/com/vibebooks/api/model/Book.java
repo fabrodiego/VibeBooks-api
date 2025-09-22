@@ -23,10 +23,10 @@ public class Book {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(name = "author", nullable = false)
     private String author;
 
     @Column(unique = true, length = 13)
@@ -35,19 +35,19 @@ public class Book {
     @Column(name = "publication_year")
     private Integer publicationYear;
 
-    @Column(name = "cover_url")
-    private String coverUrl;
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
 
     @CreationTimestamp
-    @Column(name = "date_added")
-    private OffsetDateTime dateAdded;
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 
     public Book(BookCreationDTO data) {
         this.title = data.title();
         this.author = data.author();
         this.isbn = data.isbn();
         this.publicationYear = data.publicationYear();
-        this.coverUrl = data.coverUrl();
+        this.coverImageUrl = data.coverImageUrl();
     }
 
     public void updateInformation(BookCreationDTO data) {
@@ -63,8 +63,8 @@ public class Book {
         if (data.publicationYear() != null) {
             this.publicationYear = data.publicationYear();
         }
-        if (data.coverUrl() != null) {
-            this.coverUrl = data.coverUrl();
+        if (data.coverImageUrl() != null) {
+            this.coverImageUrl = data.coverImageUrl();
         }
     }
 }

@@ -28,8 +28,8 @@ public class Like {
     private Comment comment;
 
     @CreationTimestamp
-    @Column(name = "creation_date")
-    private OffsetDateTime creationDate;
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 
     public Like(User user, Comment comment) {
         this.user = user;
