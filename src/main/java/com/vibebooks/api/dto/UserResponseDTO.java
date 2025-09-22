@@ -2,8 +2,8 @@ package com.vibebooks.api.dto;
 
 import java.util.UUID;
 
-public record UsuarioResponseDTO(
+public record UserResponseDTO(
         UUID id,
-        String nomeUsuario,
+        String username,
         String email
 ) {}

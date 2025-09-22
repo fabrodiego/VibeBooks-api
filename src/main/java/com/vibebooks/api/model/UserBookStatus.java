@@ -10,42 +10,42 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "usuario_livro_status")
+@Table(name = "user_book_status")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioLivroStatus {
+public class UserBookStatus {
 
     @EmbeddedId
-    private UsuarioLivroStatusId id;
+    private UserBookStatusId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("usuarioId")
-    private Usuario usuario;
+    @MapsId("userId")
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("livroId")
-    private Livro livro;
+    @MapsId("bookId")
+    private Book book;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(columnDefinition = "status_leitura")
-    private StatusLeitura status = StatusLeitura.QUERO_LER;
+    @Column(columnDefinition = "reading_status")
+    private ReadingStatus status = ReadingStatus.WANT_TO_READ;
 
     @Column(nullable = false)
-    private boolean salvo = false;
+    private boolean saved = false;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(columnDefinition = "sentimento_livro")
-    private SentimentoLivro sentimento;
+    @Column(columnDefinition = "book_sentiment")
+    private BookSentiment sentiment;
 
     @org.hibernate.annotations.UpdateTimestamp
-    @Column(name = "data_atualizacao")
-    private OffsetDateTime dataAtualizacao;
+    @Column(name = "update_date")
+    private OffsetDateTime updateDate;
 
-    @Column(name = "curtido", nullable = false)
-    private boolean curtido = false;
+    @Column(name = "liked", nullable = false)
+    private boolean liked = false;
 
 }

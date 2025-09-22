@@ -1,6 +1,6 @@
 package com.vibebooks.api.security;
 
-import com.vibebooks.api.repository.UsuarioRepository;
+import com.vibebooks.api.repository.UserRepository;
 import com.vibebooks.api.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -29,48 +29,48 @@ public class SecurityFilter extends OncePerRequestFilter {
     private TokenService tokenService;
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        logger.debug("Filtro de segurança acionado para a rota: {}", request.getRequestURI());
+        logger.debug("Security filter triggered for route: {}", request.getRequestURI());
 
-        String tokenJWT = recuperarToken(request);
+        String jwtToken = recoverToken(request);
 
-        if (tokenJWT != null) {
+        if (jwtToken != null) {
             try {
-                String subject = tokenService.getSubject(tokenJWT);
-                logger.debug("Subject (ID do usuário) extraído do token: {}", subject);
+                String subject = tokenService.getSubject(jwtToken);
+                logger.debug("Subject (User ID) extracted from token: {}", subject);
 
-                UUID usuarioId = UUID.fromString(subject);
+                UUID userId = UUID.fromString(subject);
 
-                UserDetails usuario = usuarioRepository.findById(usuarioId)
-                        .orElseThrow(() -> new RuntimeException("Usuário do token não encontrado no banco de dados"));
+                UserDetails user = userRepository.findById(userId)
+                        .orElseThrow(() -> new RuntimeException("Token user not found in the database"));
 
-                logger.info("Usuário '{}' encontrado. Autenticando...", usuario.getUsername());
+                logger.info("User '{}' found. Authenticating...", user.getUsername());
 
-                var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                logger.info("Usuário '{}' autenticado com sucesso e definido no Contexto de Segurança.", usuario.getUsername());
+                logger.info("User '{}' successfully authenticated and set in the Security Context.", user.getUsername());
 
             } catch (Exception e) {
-                // É uma boa prática limpar o contexto de segurança em caso de erro na validação do token.
+                // It is good practice to clear the security context in case of a token validation error.
                 SecurityContextHolder.clearContext();
-                logger.error("Falha na validação do token JWT: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+                logger.error("Failed to validate JWT token: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             }
         }
-        // Se o tokenJWT for nulo, não fazemos nada. A requisição continua na cadeia de filtros.
-        // Se o endpoint for protegido, o Spring Security irá bloqueá-lo.
-        // Se for um endpoint público, será permitido. Isso evita o log desnecessário.
+        // If the jwtToken is null, we do nothing. The request continues in the filter chain.
+        // If the endpoint is protected, Spring Security will block it.
+        // If it is a public endpoint, it will be allowed. This avoids unnecessary logging.
 
         filterChain.doFilter(request, response);
-        logger.debug("Filtro de segurança finalizado para a rota: {}", request.getRequestURI());
+        logger.debug("Security filter finished for route: {}", request.getRequestURI());
     }
 
-    private String recuperarToken(HttpServletRequest request) {
+    private String recoverToken(HttpServletRequest request) {
         String authorizationHeader = request.getHeader(AUTH_HEADER);
         if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_PREFIX)) {
             return authorizationHeader.substring(TOKEN_PREFIX.length());

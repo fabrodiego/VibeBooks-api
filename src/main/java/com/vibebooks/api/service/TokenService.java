@@ -1,6 +1,6 @@
 package com.vibebooks.api.service;
 
-import com.vibebooks.api.model.Usuario;
+import com.vibebooks.api.model.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -23,34 +23,34 @@ public class TokenService {
     @Value("${api.security.token.expiration-hours}")
     private long expirationHours;
 
-    public String gerarToken(Usuario usuario) {
-        Instant dataExpiracao = LocalDateTime.now()
+    public String generateToken(User user) {
+        Instant expirationDate = LocalDateTime.now()
                 .plusHours(expirationHours)
                 .toInstant(ZoneOffset.of("-03:00"));
 
         return Jwts.builder()
                 .setIssuer("VibeBooks API")
-                .setSubject(usuario.getId().toString())
+                .setSubject(user.getId().toString())
                 .setIssuedAt(new Date())
-                .setExpiration(Date.from(dataExpiracao))
-                .signWith(getChaveDeAssinatura(), SignatureAlgorithm.HS256)
+                .setExpiration(Date.from(expirationDate))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String getSubject(String tokenJWT) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(getChaveDeAssinatura())
+                    .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(tokenJWT)
                     .getBody()
                     .getSubject();
         } catch (Exception e) {
-            throw new RuntimeException("Token JWT Inválido ou Expirado");
+            throw new RuntimeException("Invalid or Expired JWT Token");
         }
     }
 
-    private SecretKey getChaveDeAssinatura() {
+    private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 }

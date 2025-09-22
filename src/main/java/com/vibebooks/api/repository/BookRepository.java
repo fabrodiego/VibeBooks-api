@@ -1,6 +1,6 @@
 package com.vibebooks.api.repository;
 
-import com.vibebooks.api.model.Livro;
+import com.vibebooks.api.model.Book;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.Optional;
 
 @Repository
-public interface LivroRepository extends JpaRepository<Livro, UUID> {
+public interface BookRepository extends JpaRepository<Book, UUID> {
 
-    Optional<Livro> findByIsbn(String isbn);
+    Optional<Book> findByIsbn(String isbn);
 }

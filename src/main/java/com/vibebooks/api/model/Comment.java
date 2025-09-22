@@ -10,35 +10,35 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "comentarios")
+@Table(name = "comments")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Comentario {
+public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String texto;
+    private String text;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "livro_id", nullable = false)
-    private Livro livro;
+    @JoinColumn(name = "book_id", nullable = false)
+    private Book book;
 
     @CreationTimestamp
-    @Column(name = "data_criacao", nullable = false, updatable = false)
-    private OffsetDateTime dataCriacao;
+    @Column(name = "creation_date", nullable = false, updatable = false)
+    private OffsetDateTime creationDate;
 
-    public Comentario (String texto, Usuario usuario, Livro livro) {
-        this.texto = texto;
-        this.usuario = usuario;
-        this.livro = livro;
+    public Comment (String text, User user, Book book) {
+        this.text = text;
+        this.user = user;
+        this.book = book;
     }
 }

@@ -16,45 +16,45 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "usuarios")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuario implements UserDetails {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "nome_usuario", unique = true, nullable = false, length = 50)
-    private String nomeUsuario;
+    @Column(name = "username", unique = true, nullable = false, length = 50)
+    private String username;
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "senha_hash", nullable = false)
-    private String senhaHash;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @CreationTimestamp
-    @Column(name = "data_criacao")
-    private OffsetDateTime dataCriacao;
+    @Column(name = "creation_date")
+    private OffsetDateTime creationDate;
 
-    // --- MÉTODOS DA INTERFACE UserDetails ---
+    // --- UserDetails INTERFACE METHODS ---
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    // Métodos que controlam status da conta.
+    // Methods that control account status.
     @Override
     public String getPassword() {
-        return this.senhaHash;
+        return this.passwordHash;
     }
 
     @Override
     public String getUsername() {
-        return this.email;
+        return this.email; // Using email as the username for authentication
     }
 
     @Override
@@ -66,4 +66,3 @@ public class Usuario implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 }
-

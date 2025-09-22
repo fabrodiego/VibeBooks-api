@@ -1,8 +1,8 @@
 package com.vibebooks.api.controller;
 
-import com.vibebooks.api.dto.AutenticacaoDTO;
+import com.vibebooks.api.dto.AuthenticationDTO;
 import com.vibebooks.api.dto.TokenDTO;
-import com.vibebooks.api.model.Usuario;
+import com.vibebooks.api.model.User;
 import com.vibebooks.api.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/login")
-public class AutenticacaoController {
+public class AuthenticationController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -24,14 +24,14 @@ public class AutenticacaoController {
     private TokenService tokenService;
 
     @PostMapping
-    public ResponseEntity<TokenDTO> login(@RequestBody AutenticacaoDTO dto) {
-        var authenticationToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
+    public ResponseEntity<TokenDTO> login(@RequestBody AuthenticationDTO dto) {
+        var authenticationToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.password());
 
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
-        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+        User authenticatedUser = (User) authentication.getPrincipal();
 
-        String token = tokenService.gerarToken(usuarioAutenticado);
+        String token = tokenService.generateToken(authenticatedUser);
 
         return ResponseEntity.ok(new TokenDTO(token));
     }

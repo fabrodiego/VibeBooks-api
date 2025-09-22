@@ -14,22 +14,22 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurtidaId implements Serializable {
+public class LikeId implements Serializable {
 
-    private UUID usuarioId;
-    private UUID comentarioId;
+    private UUID userId;
+    private UUID commentId;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CurtidaId curtidaId = (CurtidaId) o;
-        return Objects.equals(usuarioId, curtidaId.usuarioId) &&
-                Objects.equals(comentarioId, curtidaId.comentarioId);
+        LikeId likeId = (LikeId) o;
+        return Objects.equals(userId, likeId.userId) &&
+                Objects.equals(commentId, likeId.commentId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(usuarioId, comentarioId);
+        return Objects.hash(userId, commentId);
     }
 }

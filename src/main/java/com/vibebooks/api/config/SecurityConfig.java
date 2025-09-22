@@ -42,8 +42,8 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Rotas públicas
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll() // Permite que qualquer um crie um novo usuário.
-                        .requestMatchers(HttpMethod.POST, "/login").permitAll() // Permite que qualquer um tente fazer login.
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll() // Permite que qualquer um crie um usuário.
+                        .requestMatchers(HttpMethod.POST, "/login").permitAll() // Permite que qualquer um tente fazer "login".
                         .requestMatchers(HttpMethod.GET, "/api/livros/**").permitAll() // Permite que qualquer um veja os livros cadastrados
 
                         // Qualquer outra rota exige autenticação
