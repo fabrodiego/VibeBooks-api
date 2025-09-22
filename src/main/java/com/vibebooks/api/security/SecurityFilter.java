@@ -6,9 +6,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,20 +20,18 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
     private static final String AUTH_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
 
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final TokenService tokenService;
+    private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         logger.debug("Security filter triggered for route: {}", request.getRequestURI());
@@ -60,11 +59,14 @@ public class SecurityFilter extends OncePerRequestFilter {
                 // It is good practice to clear the security context in case of a token validation error.
                 SecurityContextHolder.clearContext();
                 logger.error("Failed to validate JWT token: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid or expired JWT Token.");
+                return;
             }
+        } else {
+            logger.trace("No JWT Token found in Authorization header. Proceeding with filter chain for anonymous access.");
         }
-        // If the jwtToken is null, we do nothing. The request continues in the filter chain.
-        // If the endpoint is protected, Spring Security will block it.
-        // If it is a public endpoint, it will be allowed. This avoids unnecessary logging.
 
         filterChain.doFilter(request, response);
         logger.debug("Security filter finished for route: {}", request.getRequestURI());
