@@ -1,19 +1,24 @@
 package com.vibebooks.api.controller;
 
-import com.vibebooks.api.dto.ComentarioCadastroDTO; // Importe o DTO
-import com.vibebooks.api.dto.ComentarioDetalhesDTO; // Importe o DTO
+import com.vibebooks.api.dto.ComentarioCadastroDTO;
+import com.vibebooks.api.dto.LivroCurtidaResponseDTO;
+import com.vibebooks.api.dto.ComentarioDetalhesDTO;
 import com.vibebooks.api.dto.LivroCadastroDTO;
 import com.vibebooks.api.dto.LivroDetalhesDTO;
-import com.vibebooks.api.model.Comentario; // Importe o model
+import com.vibebooks.api.model.Comentario;
 import com.vibebooks.api.model.Livro;
-import com.vibebooks.api.model.Usuario; // Importe o model
-import com.vibebooks.api.repository.ComentarioRepository; // Importe o repository
+import com.vibebooks.api.model.Usuario;
+import com.vibebooks.api.model.UsuarioLivroStatus;
+import com.vibebooks.api.model.UsuarioLivroStatusId;
+import com.vibebooks.api.repository.UsuarioLivroStatusRepository;
+import com.vibebooks.api.repository.ComentarioRepository;
 import com.vibebooks.api.repository.LivroRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication; // Importe o Authentication
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -24,11 +29,15 @@ import java.util.UUID;
 @RequestMapping("/api/livros")
 public class LivroController {
 
-    @Autowired
-    private LivroRepository livroRepository;
+    private final LivroRepository livroRepository;
+    private final ComentarioRepository comentarioRepository;
+    private final UsuarioLivroStatusRepository usuarioLivroStatusRepository;
 
-    @Autowired
-    private ComentarioRepository comentarioRepository;
+    public LivroController(LivroRepository livroRepository, ComentarioRepository comentarioRepository, UsuarioLivroStatusRepository usuarioLivroStatusRepository) {
+        this.livroRepository = livroRepository;
+        this.comentarioRepository = comentarioRepository;
+        this.usuarioLivroStatusRepository = usuarioLivroStatusRepository;
+    }
 
     @PostMapping
     @Transactional
@@ -60,7 +69,7 @@ public class LivroController {
 
     @GetMapping("/{id}")
     public ResponseEntity<LivroDetalhesDTO> detalharLivro(@PathVariable UUID id) {
-        // 1. Busca o livro no repositório pelo ID
+        // 1. Busca o livro no repositório pelo “ID”
         var livroOptional = livroRepository.findById(id);
 
         // 2. Se o livro não for encontrado, retorna o status 404 Not Found
@@ -130,5 +139,49 @@ public class LivroController {
         var uri = uriBuilder.path("/api/comentarios/{id}").buildAndExpand(comentarioSalvo.getId()).toUri();
 
         return ResponseEntity.created(uri).body(new ComentarioDetalhesDTO(comentarioSalvo));
+    }
+
+    /**
+     * Endpoint para listar todos os comentários de um livro específico.
+     *
+     * @param id O "ID" do livro.
+     * @return Uma lista de DTOs de detalhes dos comentários, ou 404 Not Found se o livro não existir.
+     */
+    @GetMapping("/{id}/comentarios")
+    public ResponseEntity<List<ComentarioDetalhesDTO>> listarComentariosPorLivro(@PathVariable UUID id) {
+        if (!livroRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        var comentarios = comentarioRepository.findAllByLivroId(id);
+
+        var dtos = comentarios.stream().map(ComentarioDetalhesDTO::new).toList();
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    @PostMapping("/{id}/curtir")
+    @Transactional
+    public ResponseEntity<LivroCurtidaResponseDTO> curtirOuDescurtirLivro(@PathVariable UUID id, Authentication authentication) {
+        var usuarioLogado = (Usuario) authentication.getPrincipal();
+
+        var livro = livroRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro não encontrado"));
+
+        var statusId = new UsuarioLivroStatusId(usuarioLogado.getId(), livro.getId());
+
+        var status = usuarioLivroStatusRepository.findById(statusId).orElseGet(() -> {
+            var novoStatus = new UsuarioLivroStatus();
+            novoStatus.setId(statusId);
+            novoStatus.setUsuario(usuarioLogado);
+            novoStatus.setLivro(livro);
+            return novoStatus;
+        });
+
+        status.setCurtido(!status.isCurtido());
+        usuarioLivroStatusRepository.saveAndFlush(status);
+
+        long totalCurtidas = usuarioLivroStatusRepository.countByLivroIdAndCurtidoIsTrue(livro.getId());
+
+        return ResponseEntity.ok(new LivroCurtidaResponseDTO(status.isCurtido(), totalCurtidas));
     }
 }
