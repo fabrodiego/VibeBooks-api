@@ -1,64 +1,54 @@
 package com.vibebooks.api.controller;
 
-import com.vibebooks.api.model.Like;
+import com.vibebooks.api.dto.CommentCreationDTO;
+import com.vibebooks.api.dto.CommentDetailsDTO;
 import com.vibebooks.api.model.User;
-import com.vibebooks.api.repository.CommentRepository;
-import com.vibebooks.api.repository.LikeRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.http.HttpStatus;
+import com.vibebooks.api.service.CommentService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/comments")
+@RequiredArgsConstructor
 public class CommentController {
 
-    private final CommentRepository commentRepository;
-    private final LikeRepository likeRepository;
+    private final CommentService commentService;
 
-    public CommentController(CommentRepository commentRepository, LikeRepository likeRepository) {
-        this.commentRepository = commentRepository;
-        this.likeRepository = likeRepository;
+    @PostMapping
+    public ResponseEntity<CommentDetailsDTO> addComment(
+            @RequestBody @Valid CommentCreationDTO dto,
+            @AuthenticationPrincipal User loggedInUser,
+            UriComponentsBuilder uriBuilder
+    ) {
+        var newComment = commentService.addCommentToBook(dto, loggedInUser);
+        var uri = uriBuilder.path("/api/comments/{id}").buildAndExpand(newComment.getId()).toUri();
+        return ResponseEntity.created(uri).body(new CommentDetailsDTO(newComment));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CommentDetailsDTO>> listCommentsByBook(@RequestParam(value = "bookId") UUID bookId) {
+        var dtos = commentService.findCommentsByBookId(bookId);
+        return ResponseEntity.ok(dtos);
     }
 
     @DeleteMapping("/{id}")
-    @Transactional
-    public ResponseEntity<Void> deleteComment(@PathVariable UUID id, Authentication authentication) {
-        var optionalComment = commentRepository.findById(id);
-        if (optionalComment.isEmpty()) {
-            return  ResponseEntity.notFound().build();
-        }
-        var comment = optionalComment.get();
-
-        var loggedInUser = (User) authentication.getPrincipal();
-
-        if (!comment.getUser().getId().equals(loggedInUser.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        commentRepository.delete(comment);
-
+    public ResponseEntity<Void> deleteComment(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
+        commentService.deleteComment(id, loggedInUser);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/like")
-    @Transactional
-    public ResponseEntity<Void> likeOrUnlikeComment(@PathVariable UUID id, Authentication authentication) {
-        var loggedInUser = (User) authentication.getPrincipal();
-
-        var comment = commentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
-
-        var optionalLike = likeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId());
-
-        if(optionalLike.isPresent()) {
-            likeRepository.delete(optionalLike.get());
-        } else {
-            likeRepository.save(new Like(loggedInUser, comment));
-        }
+    public ResponseEntity<Void> likeOrUnlikeComment(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
+        commentService.likeOrUnlikeComment(id, loggedInUser);
         return ResponseEntity.ok().build();
     }
 }
