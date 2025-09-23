@@ -64,6 +64,19 @@ public class UserService {
         return user;
     }
 
+    @Transactional
+    public void deleteUser(UUID id, User loggedInUser) {
+        if (!loggedInUser.getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not authorized to delete this profile.");
+        }
+
+        if (!userRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found.");
+        }
+
+        userRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll()

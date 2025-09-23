@@ -49,6 +49,12 @@ public class UserController {
         return ResponseEntity.ok(new UserResponseDTO(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getEmail()));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
+        userService.deleteUser(id, loggedInUser);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("{id}/follow")
     public ResponseEntity<Void> followUser(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
         followService.followUser(loggedInUser, id);
