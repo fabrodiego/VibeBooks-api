@@ -19,6 +19,10 @@ public class UserBookStatusId implements Serializable {
     private UUID userId;
     private UUID bookId;
 
+    public static UserBookStatusId of(User user, Book book) {
+        return new UserBookStatusId(user.getId(), book.getId());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

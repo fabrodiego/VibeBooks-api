@@ -106,7 +106,7 @@ public class BookService {
 
     private UserBookStatus findOrCreateUserBookStatus(UUID bookId, User user) {
         var book = getReferenceById(bookId);
-        var statusId = new UserBookStatusId(user, book);
+        var statusId = UserBookStatusId.of(user, book);
 
         return userBookStatusRepository.findById(statusId)
                 .orElseGet(() -> {
