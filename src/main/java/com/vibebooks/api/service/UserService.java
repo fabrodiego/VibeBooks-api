@@ -1,6 +1,7 @@
 package com.vibebooks.api.service;
 
 import com.vibebooks.api.dto.UserCreateDTO;
+import com.vibebooks.api.dto.UserPasswordUpdateDTO;
 import com.vibebooks.api.dto.UserResponseDTO;
 import com.vibebooks.api.dto.UserUpdateDTO;
 import com.vibebooks.api.model.User;
@@ -83,5 +84,21 @@ public class UserService {
                 .stream()
                 .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail()))
                 .toList();
+    }
+
+    @Transactional
+    public void changePassword(UUID id, UserPasswordUpdateDTO data, User loggedInUser) {
+        if (!loggedInUser.getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not authorized to change this password.");
+        }
+
+        var user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(data.oldPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect old password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(data.newPassword()));
     }
 }

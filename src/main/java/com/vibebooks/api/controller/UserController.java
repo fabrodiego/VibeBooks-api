@@ -1,6 +1,7 @@
 package com.vibebooks.api.controller;
 
 import com.vibebooks.api.dto.UserCreateDTO;
+import com.vibebooks.api.dto.UserPasswordUpdateDTO;
 import com.vibebooks.api.dto.UserResponseDTO;
 import com.vibebooks.api.dto.UserUpdateDTO;
 import com.vibebooks.api.model.User;
@@ -47,6 +48,15 @@ public class UserController {
             @AuthenticationPrincipal User loggedInUser) {
         User updatedUser = userService.updateUser(id, dto, loggedInUser);
         return ResponseEntity.ok(new UserResponseDTO(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getEmail()));
+    }
+
+    @PutMapping("{id}/password")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable UUID id,
+            @RequestBody @Valid UserPasswordUpdateDTO dto,
+            @AuthenticationPrincipal User loggedInUser) {
+        userService.changePassword(id, dto, loggedInUser);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
