@@ -2,9 +2,11 @@ package com.vibebooks.api.controller;
 
 import com.vibebooks.api.dto.UserCreateDTO;
 import com.vibebooks.api.dto.UserResponseDTO;
+import com.vibebooks.api.dto.UserUpdateDTO;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.service.FollowService;
 import com.vibebooks.api.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,15 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> listUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponseDTO> updateUser(
+            @PathVariable UUID id,
+            @RequestBody @Valid UserUpdateDTO dto,
+            @AuthenticationPrincipal User loggedInUser) {
+        User updatedUser = userService.updateUser(id, dto, loggedInUser);
+        return ResponseEntity.ok(new UserResponseDTO(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getEmail()));
     }
 
     @PostMapping("{id}/follow")
