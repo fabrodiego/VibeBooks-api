@@ -12,4 +12,6 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
      * @return A list of comments for the specified book.
      */
     List<Comment> findAllByBookId(UUID bookId);
+
+    List<Comment> findAllByBookIdIn(List<UUID> bookIds);
 }
