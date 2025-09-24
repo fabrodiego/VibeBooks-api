@@ -9,12 +9,15 @@ import com.vibebooks.api.model.UserBookStatus;
 import com.vibebooks.api.service.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,8 +28,8 @@ public class BookController {
     private final BookService bookService;
 
     @GetMapping
-    public ResponseEntity<List<BookDetailsDTO>> listBooks() {
-        return ResponseEntity.ok(bookService.listAllBooks());
+    public ResponseEntity<Page<BookDetailsDTO>> listBooks(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(bookService.listAllBooks(pageable));
     }
 
     @GetMapping("/{id}")
