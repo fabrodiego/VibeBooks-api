@@ -29,16 +29,14 @@ public class UserBookStatus {
     private Book book;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(columnDefinition = "reading_status")
+    @Column(name = "status")
     private ReadingStatus status = ReadingStatus.WANT_TO_READ;
 
     @Column(nullable = false)
     private boolean saved = false;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(columnDefinition = "book_sentiment")
+    @Column(name = "sentiment")
     private BookSentiment sentiment;
 
     @org.hibernate.annotations.UpdateTimestamp
