@@ -26,7 +26,7 @@ public class UserService {
     @Transactional
     public User createUser(UserCreateDTO data) {
         if (userRepository.findByUsernameOrEmail(data.username(), data.email()).isPresent()) {
-            throw new IllegalStateException("Username or email already registered.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,"Username or email already registered.");
         }
 
         String encryptedPassword = passwordEncoder.encode(data.rawPassword());

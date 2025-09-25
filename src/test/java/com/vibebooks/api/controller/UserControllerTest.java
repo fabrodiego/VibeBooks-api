@@ -62,4 +62,32 @@ class UserControllerTest {
         assertThat(savedUser.getUsername()).isEqualTo("newUserTest");
         assertThat(passwordEncoder.matches("password123", savedUser.getPassword())).isTrue();
     }
+
+    @Test
+    @DisplayName("Should return status 409 Conflict when creating a user with an existing email")
+    void shouldReturnConflictWhenCreatingUserWithExistingEmail() throws Exception {
+        // ARRANGE (Arrumar a cena)
+        // 1. Primeiro, criamos um usuário "pré-existente" diretamente no banco de dados de teste.
+        var existingUser = new User();
+        existingUser.setUsername("existingUser");
+        existingUser.setEmail("existing@email.com");
+        existingUser.setPassword("any_password");
+        userRepository.save(existingUser);
+
+        // 2. Agora, criamos um DTO com o MESMO email, tentando criar um usuário duplicado.
+        var duplicateUserDTO = new UserCreateDTO("newUser", "existing@email.com", "password123");
+        var jsonRequest = objectMapper.writeValueAsString(duplicateUserDTO);
+
+
+        // ACT (Executar a ação)
+        var response = mockMvc.perform(
+                post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+        );
+
+        // ASSERT (Verificar o resultado)
+        // A única coisa que nos importa é verificar se o status da resposta é 409 Conflict.
+        response.andExpect(status().isConflict());
+    }
 }
