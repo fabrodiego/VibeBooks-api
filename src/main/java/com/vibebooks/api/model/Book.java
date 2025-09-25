@@ -67,4 +67,9 @@ public class Book {
             this.coverImageUrl = data.coverImageUrl();
         }
     }
+
+    public Book(String title, String author) {
+        this.title = title;
+        this.author = author;
+    }
 }
