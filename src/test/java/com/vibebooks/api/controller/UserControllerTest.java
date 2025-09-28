@@ -50,7 +50,7 @@ class UserControllerTest {
         var userJson = objectMapper.writeValueAsString(userDTO);
 
         var response = mockMvc.perform(
-                post("/api/users")
+                post("/vibebooks/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userJson)
         );
@@ -87,7 +87,7 @@ class UserControllerTest {
 
 
         var response = mockMvc.perform(
-                post("/api/users")
+                post("/vibebooks/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest)
         );

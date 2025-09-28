@@ -20,6 +20,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
+
 
 @Configuration
 @EnableWebSecurity
@@ -42,12 +44,13 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public routes
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/comments").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/feed").permitAll()
+                        .requestMatchers(API_PREFIX + "/auth/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, API_PREFIX + "/books/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, API_PREFIX + "/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, API_PREFIX + "/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, API_PREFIX + "/feed").permitAll()
+
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         // Any other route requires authentication

@@ -55,7 +55,7 @@ class CommentControllerTest {
         String ownerToken = tokenService.generateToken(owner);
 
         var response = mockMvc.perform(
-                delete("/api/comments/{id}", comment.getId())
+                delete("/vibebooks/api/comments/{id}", comment.getId())
                         .header("Authorization", "Bearer " + ownerToken)
         );
 
@@ -83,7 +83,7 @@ class CommentControllerTest {
         String attackerToken = tokenService.generateToken(attacker);
 
         var response = mockMvc.perform(
-                delete("/api/comments/{id}", ownersComment.getId())
+                delete("/vibebooks/api/comments/{id}", ownersComment.getId())
                         .header("Authorization", "Bearer " + attackerToken)
         );
 

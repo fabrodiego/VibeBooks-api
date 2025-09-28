@@ -51,7 +51,7 @@ class BookControllerTest {
         var jsonRequest = objectMapper.writeValueAsString(bookDTO);
 
         mockMvc.perform(
-                        post("/api/books")
+                        post("/vibebooks/api/books")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(jsonRequest)
                 )
@@ -78,7 +78,7 @@ class BookControllerTest {
         var jsonRequest = objectMapper.writeValueAsString(bookDTO);
 
         mockMvc.perform(
-                        post("/api/books")
+                        post("/vibebooks/api/books")
                                 .header("Authorization", "Bearer " + authToken)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(jsonRequest)

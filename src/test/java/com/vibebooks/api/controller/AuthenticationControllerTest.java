@@ -46,7 +46,7 @@ class AuthenticationControllerTest {
         var jsonRequest = objectMapper.writeValueAsString(loginDTO);
 
         var response = mockMvc.perform(
-                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/login")
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/vibebooks/api/auth/login")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content(jsonRequest)
         );
@@ -68,7 +68,7 @@ class AuthenticationControllerTest {
         var jsonRequest = objectMapper.writeValueAsString(loginDTO);
 
         var response = mockMvc.perform(
-                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/login")
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/vibebooks/api/auth/login")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content(jsonRequest)
         );

@@ -1,6 +1,5 @@
 package com.vibebooks.api.controller;
 
-import com.vibebooks.api.dto.UserCreateDTO;
 import com.vibebooks.api.dto.UserPasswordUpdateDTO;
 import com.vibebooks.api.dto.UserResponseDTO;
 import com.vibebooks.api.dto.UserUpdateDTO;
@@ -9,7 +8,6 @@ import com.vibebooks.api.service.FollowService;
 import com.vibebooks.api.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -26,17 +24,6 @@ public class UserController {
 
     private final UserService userService;
     private final FollowService followService;
-
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponseDTO createUser(@RequestBody UserCreateDTO dto){
-        User newUser = userService.createUser(dto);
-        return new UserResponseDTO(
-                newUser.getId(),
-                newUser.getUsername(),
-                newUser.getEmail()
-        );
-    }
 
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> listUsers() {
