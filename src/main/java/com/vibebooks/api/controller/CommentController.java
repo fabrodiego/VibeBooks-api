@@ -14,8 +14,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 import java.util.UUID;
 
+import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
+
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping(API_PREFIX + "/comments")
 @RequiredArgsConstructor
 public class CommentController {
 

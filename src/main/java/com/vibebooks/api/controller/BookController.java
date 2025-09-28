@@ -20,8 +20,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.UUID;
 
+import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
+
 @RestController
-@RequestMapping("/api/books")
+@RequestMapping(API_PREFIX + "/books")
 @RequiredArgsConstructor
 public class BookController {
 

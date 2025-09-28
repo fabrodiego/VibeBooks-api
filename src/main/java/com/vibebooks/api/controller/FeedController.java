@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
+
 @RestController
-@RequestMapping("/api/feed")
+@RequestMapping(API_PREFIX + "/feed")
 @RequiredArgsConstructor
 public class FeedController {
 

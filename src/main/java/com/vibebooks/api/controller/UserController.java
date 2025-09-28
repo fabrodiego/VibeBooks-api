@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
+
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping(API_PREFIX + "/users")
 @RequiredArgsConstructor
 public class UserController {
 
