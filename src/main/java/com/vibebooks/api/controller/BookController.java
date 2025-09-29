@@ -75,4 +75,12 @@ public class BookController {
         var savedStatus = bookService.updateBookStatus(id, loggedInUser, dto);
         return ResponseEntity.ok(savedStatus);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<BookDetailsDTO>> searchBooks(
+            @RequestParam("query") String query,
+            @PageableDefault() Pageable pageable) {
+
+        return ResponseEntity.ok(bookService.searchBooks(query, pageable));
+    }
 }

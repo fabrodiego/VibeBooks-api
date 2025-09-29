@@ -119,4 +119,10 @@ public class BookService {
                     return newStatus;
                 });
     }
+
+    @Transactional(readOnly = true)
+    public Page<BookDetailsDTO> searchBooks(String query, Pageable pageable) {
+        return bookRepository.findByTitleContainingIgnoreCase(query, pageable)
+                .map(BookDetailsDTO::new);
+    }
 }
