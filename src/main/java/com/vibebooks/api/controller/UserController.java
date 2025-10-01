@@ -75,4 +75,9 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> listFollowers(@PathVariable UUID id) {
         return ResponseEntity.ok(followService.getFollowers(id));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getMyProfile(@AuthenticationPrincipal User loggedInUser) {
+        return ResponseEntity.ok(new UserResponseDTO(loggedInUser));
+    }
 }
