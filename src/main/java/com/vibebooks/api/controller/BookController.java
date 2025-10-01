@@ -4,6 +4,7 @@ import com.vibebooks.api.dto.BookCreationDTO;
 import com.vibebooks.api.dto.BookDetailsDTO;
 import com.vibebooks.api.dto.BookStatusUpdateDTO;
 import com.vibebooks.api.dto.BookLikeResponseDTO;
+import com.vibebooks.api.dto.BookIsbnDTO;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.model.UserBookStatus;
 import com.vibebooks.api.service.BookService;
@@ -40,9 +41,9 @@ public class BookController {
     }
 
     @PostMapping
-    public ResponseEntity<BookDetailsDTO> createBook(@RequestBody @Valid BookCreationDTO dto, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<BookDetailsDTO> createBook(@RequestBody @Valid BookIsbnDTO dto, UriComponentsBuilder uriBuilder) {
         var newBook = bookService.createBook(dto);
-        var uri = uriBuilder.path("/api/books/{id}").buildAndExpand(newBook.getId()).toUri();
+        var uri = uriBuilder.path(API_PREFIX + "/books/{id}").buildAndExpand(newBook.getId()).toUri();
         return ResponseEntity.created(uri).body(new BookDetailsDTO(newBook));
     }
 

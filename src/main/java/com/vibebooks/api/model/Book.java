@@ -1,12 +1,15 @@
 package com.vibebooks.api.model;
 
 import com.vibebooks.api.dto.BookCreationDTO;
+import com.vibebooks.api.dto.google.VolumeInfo;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -18,6 +21,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Book {
+
+    private static final Logger log = LoggerFactory.getLogger(Book.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -41,6 +46,11 @@ public class Book {
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
+
+    public Book(String title, String author) {
+        this.title = title;
+        this.author = author;
+    }
 
     public Book(BookCreationDTO data) {
         this.title = data.title();
@@ -68,8 +78,32 @@ public class Book {
         }
     }
 
-    public Book(String title, String author) {
-        this.title = title;
-        this.author = author;
+    public static Book fromGoogleVolumeInfo(VolumeInfo volumeInfo, String isbn) {
+        var book = new Book();
+        book.setTitle(volumeInfo.title());
+
+        if (volumeInfo.authors() != null && !volumeInfo.authors().isEmpty()) {
+            book.setAuthor(volumeInfo.authors().getFirst());
+        } else {
+            book.setAuthor("Autor desconhecido");
+        }
+
+        book.setIsbn(isbn);
+
+        if (volumeInfo.publishedDate() != null && !volumeInfo.publishedDate().isEmpty()) {
+            try {
+                book.setPublicationYear(Integer.parseInt(volumeInfo.publishedDate().substring(0, 4)));
+            } catch (Exception e) {
+                log.warn("Could not parse publication year '{}' for ISBN {}", volumeInfo.publishedDate(), isbn);
+            }
+        }
+
+        if (volumeInfo.imageLinks() != null && volumeInfo.imageLinks().thumbnail() != null) {
+            book.setCoverImageUrl(volumeInfo.imageLinks().thumbnail());
+        } else {
+            book.setCoverImageUrl("https://covers.openlibrary.org/b/isbn/" + isbn + "-L.jpg");
+        }
+
+        return book;
     }
 }
