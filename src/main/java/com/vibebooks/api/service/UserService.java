@@ -62,6 +62,10 @@ public class UserService {
             user.setEmail(data.email());
         }
 
+        if (data.bio() != null) {
+            user.setBio(data.bio());
+        }
+
         return user;
     }
 
@@ -82,7 +86,7 @@ public class UserService {
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getBio()))
                 .toList();
     }
 

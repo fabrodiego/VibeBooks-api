@@ -8,6 +8,9 @@ public record UserUpdateDTO(
         String username,
 
         @Email(message = "Invalid email format.")
-        String email
+        String email,
+
+        @Size(max = 255, message = "Bio cannot exceed 255 characters.")
+        String bio
 ) {
 }

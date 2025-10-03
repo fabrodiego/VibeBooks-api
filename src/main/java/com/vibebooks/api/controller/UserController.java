@@ -36,7 +36,7 @@ public class UserController {
             @RequestBody @Valid UserUpdateDTO dto,
             @AuthenticationPrincipal User loggedInUser) {
         User updatedUser = userService.updateUser(id, dto, loggedInUser);
-        return ResponseEntity.ok(new UserResponseDTO(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getEmail()));
+        return ResponseEntity.ok(new UserResponseDTO(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getEmail(), updatedUser.getBio()));
     }
 
     @PutMapping("{id}/password")

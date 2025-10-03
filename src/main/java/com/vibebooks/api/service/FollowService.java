@@ -58,7 +58,7 @@ public class FollowService {
         return followRepository.findAllByFollowerId(userId)
                 .stream()
                 .map(Follow::getFollowing)
-                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getBio()))
                 .collect(Collectors.toList());
     }
 
@@ -71,7 +71,7 @@ public class FollowService {
         return followRepository.findAllByFollowingId(userId)
                 .stream()
                 .map(Follow::getFollower)
-                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new UserResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getBio()))
                 .collect(Collectors.toList());
     }
 }

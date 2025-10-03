@@ -49,7 +49,8 @@ public class AuthenticationController {
         return new UserResponseDTO(
                 newUser.getId(),
                 newUser.getUsername(),
-                newUser.getEmail()
+                newUser.getEmail(),
+                newUser.getBio()
         );
     }
 }
