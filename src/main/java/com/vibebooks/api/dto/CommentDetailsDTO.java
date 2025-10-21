@@ -10,6 +10,7 @@ import java.util.UUID;
 public record CommentDetailsDTO(
         UUID id,
         String text,
+        UUID userId,
         String username,
         OffsetDateTime creationDate,
         UUID bookId,
@@ -22,6 +23,7 @@ public record CommentDetailsDTO(
         this(
                 comment.getId(),
                 comment.getText(),
+                comment.getUser().getId(),
                 comment.getUser().getUsername(),
                 comment.getCreatedAt(),
                 comment.getBook().getId(),
