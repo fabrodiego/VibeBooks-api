@@ -31,24 +31,33 @@ public class CommentController {
     ) {
         var newComment = commentService.addCommentToBook(dto, loggedInUser);
         var uri = uriBuilder.path("/api/comments/{id}").buildAndExpand(newComment.getId()).toUri();
-        return ResponseEntity.created(uri).body(new CommentDetailsDTO(newComment));
+        long initialLikes = 0;
+        boolean likedByCurrentUser = false;
+        return ResponseEntity.created(uri).body(new CommentDetailsDTO(newComment, initialLikes, likedByCurrentUser));
     }
 
     @GetMapping
-    public ResponseEntity<List<CommentDetailsDTO>> listCommentsByBook(@RequestParam(value = "bookId") UUID bookId) {
-        var dtos = commentService.findCommentsByBookId(bookId);
+    public ResponseEntity<List<CommentDetailsDTO>> listCommentsByBook(
+            @RequestParam(value = "bookId") UUID bookId,
+            @AuthenticationPrincipal User loggedInUser) {
+        var dtos = commentService.findCommentsByBookId(bookId, loggedInUser);
         return ResponseEntity.ok(dtos);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteComment(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User loggedInUser) {
         commentService.deleteComment(id, loggedInUser);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/like")
-    public ResponseEntity<Void> likeOrUnlikeComment(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
-        commentService.likeOrUnlikeComment(id, loggedInUser);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<CommentDetailsDTO> likeOrUnlikeComment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
+        var updatedCommentDetails = commentService.likeOrUnlikeComment(id, loggedInUser);
+        return ResponseEntity.ok(updatedCommentDetails);
     }
 }

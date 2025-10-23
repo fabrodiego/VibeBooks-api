@@ -1,12 +1,11 @@
 package com.vibebooks.api.repository;
 
-import com.vibebooks.api.model.Like;
-import com.vibebooks.api.model.LikeId;
+import com.vibebooks.api.model.CommentLike;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface LikeRepository extends JpaRepository<Like, LikeId> {
+public interface CommentLikeRepository extends JpaRepository<CommentLike, UUID> {
 
     /**
      * Finds a specific like by the combination of the user ID and the comment ID.
@@ -17,5 +16,13 @@ public interface LikeRepository extends JpaRepository<Like, LikeId> {
      * @param commentId The comment's "ID".
      * @return An Optional containing the Like if it exists, or empty otherwise.
      */
-    Optional<Like> findByUserIdAndCommentId(UUID userId, UUID commentId);
+    Optional<CommentLike> findByUserIdAndCommentId(UUID userId, UUID commentId);
+
+    /**
+     * Counts the total number of "likes" (entries) for a specific comment.
+     *
+     * @param commentId The "ID" of the comment.
+     * @return The total number of likes (long).
+     */
+    long countByCommentId(UUID commentId);
 }

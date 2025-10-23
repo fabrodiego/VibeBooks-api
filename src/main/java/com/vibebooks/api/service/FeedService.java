@@ -5,7 +5,9 @@ import com.vibebooks.api.dto.CommentDetailsDTO;
 import com.vibebooks.api.dto.PageResponseDTO;
 import com.vibebooks.api.model.Book;
 import com.vibebooks.api.model.Comment;
+import com.vibebooks.api.model.User;
 import com.vibebooks.api.repository.BookRepository;
+import com.vibebooks.api.repository.CommentLikeRepository;
 import com.vibebooks.api.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,9 +26,10 @@ public class FeedService {
 
     private final BookRepository bookRepository;
     private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional(readOnly = true)
-    public PageResponseDTO<BookFeedDTO> getBookFeed(Pageable pageable) {
+    public PageResponseDTO<BookFeedDTO> getBookFeed(Pageable pageable, User loggedInUser) {
         Page<Book> booksPage = bookRepository.findAll(pageable);
 
         List<UUID> bookIds = booksPage.getContent().stream()
@@ -36,7 +39,12 @@ public class FeedService {
         List<Comment> comments = commentRepository.findAllByBookIdIn(bookIds);
 
         Map<UUID, List<CommentDetailsDTO>> commentsByBookId = comments.stream()
-                .map(CommentDetailsDTO::new)
+                .map(comment -> {
+                    long likesCount = commentLikeRepository.countByCommentId(comment.getId());
+                    boolean likedByCurrentUser = (loggedInUser != null) &&
+                            commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId()).isPresent();
+                    return new CommentDetailsDTO(comment, likesCount, likedByCurrentUser);
+                })
                 .collect(Collectors.groupingBy(CommentDetailsDTO::bookId));
 
         Page<BookFeedDTO> feedDtoPage = booksPage.map(book -> {

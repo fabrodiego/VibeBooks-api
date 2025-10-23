@@ -14,12 +14,14 @@ public record CommentDetailsDTO(
         String username,
         OffsetDateTime creationDate,
         UUID bookId,
-        String bookTitle
+        String bookTitle,
+        long likesCount,
+        boolean likedByCurrentUser
 ) {
     /**
      * @param comment the Comment Entity to be converted
      */
-    public CommentDetailsDTO(Comment comment) {
+    public CommentDetailsDTO(Comment comment, long likesCount, boolean likedByCurrentUser) {
         this(
                 comment.getId(),
                 comment.getText(),
@@ -27,7 +29,9 @@ public record CommentDetailsDTO(
                 comment.getUser().getUsername(),
                 comment.getCreatedAt(),
                 comment.getBook().getId(),
-                comment.getBook().getTitle()
+                comment.getBook().getTitle(),
+                likesCount,
+                likedByCurrentUser
         );
     }
 }

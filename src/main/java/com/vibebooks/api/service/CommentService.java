@@ -3,11 +3,11 @@ package com.vibebooks.api.service;
 import com.vibebooks.api.dto.CommentCreationDTO;
 import com.vibebooks.api.dto.CommentDetailsDTO;
 import com.vibebooks.api.model.Comment;
-import com.vibebooks.api.model.Like;
+import com.vibebooks.api.model.CommentLike;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.repository.BookRepository;
 import com.vibebooks.api.repository.CommentRepository;
-import com.vibebooks.api.repository.LikeRepository;
+import com.vibebooks.api.repository.CommentLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final BookRepository bookRepository;
-    private final LikeRepository likeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional
     public Comment addCommentToBook(CommentCreationDTO dto, User loggedInUser) {
@@ -35,12 +35,17 @@ public class CommentService {
     }
 
     @Transactional(readOnly = true)
-    public List<CommentDetailsDTO> findCommentsByBookId(UUID bookId) {
+    public List<CommentDetailsDTO> findCommentsByBookId(UUID bookId, User loggedInUser) {
         if (!bookRepository.existsById(bookId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found");
         }
         return commentRepository.findAllByBookId(bookId).stream()
-                .map(CommentDetailsDTO::new)
+                .map(comment -> {
+                    long likesCount = commentLikeRepository.countByCommentId(comment.getId());
+                    boolean likedByCurrentUser = (loggedInUser != null) &&
+                            commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId()).isPresent();
+                    return  new CommentDetailsDTO(comment, likesCount, likedByCurrentUser);
+                })
                 .toList();
     }
 
@@ -53,20 +58,26 @@ public class CommentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not authorized to delete this comment");
         }
 
+        commentLikeRepository.deleteAll(comment.getLikes());
         commentRepository.delete(comment);
     }
 
     @Transactional
-    public void likeOrUnlikeComment(UUID commentId, User loggedInUser) {
+    public CommentDetailsDTO likeOrUnlikeComment(UUID commentId, User loggedInUser) {
         var comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
 
-        var likeOptional = likeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId());
+        var likeOptional = commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId());
 
         if (likeOptional.isPresent()) {
-            likeRepository.delete(likeOptional.get());
+            commentLikeRepository.delete(likeOptional.get());
         } else {
-            likeRepository.save(new Like(loggedInUser, comment));
+            commentLikeRepository.save(new CommentLike(loggedInUser, comment));
         }
+
+        long newLikesCount = commentLikeRepository.countByCommentId(commentId);
+        boolean isLikedNow = likeOptional.isEmpty();
+
+        return new CommentDetailsDTO(comment, newLikesCount, isLikedNow);
     }
 }
