@@ -8,12 +8,16 @@ import com.vibebooks.api.model.User;
 import com.vibebooks.api.repository.BookRepository;
 import com.vibebooks.api.repository.CommentRepository;
 import com.vibebooks.api.repository.CommentLikeRepository;
+import com.vibebooks.api.dto.PageResponseDTO;
+import org.springframework.data.domain.Page;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.awt.*;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,18 +39,21 @@ public class CommentService {
     }
 
     @Transactional(readOnly = true)
-    public List<CommentDetailsDTO> findCommentsByBookId(UUID bookId, User loggedInUser) {
+    public PageResponseDTO<CommentDetailsDTO> findCommentsByBookId(UUID bookId, User loggedInUser, Pageable pageable) {
         if (!bookRepository.existsById(bookId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found");
         }
-        return commentRepository.findAllByBookId(bookId).stream()
-                .map(comment -> {
-                    long likesCount = commentLikeRepository.countByCommentId(comment.getId());
-                    boolean likedByCurrentUser = (loggedInUser != null) &&
-                            commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId()).isPresent();
-                    return  new CommentDetailsDTO(comment, likesCount, likedByCurrentUser);
-                })
-                .toList();
+
+        Page<Comment> commentsPage = commentRepository.findAllByBookId(bookId, pageable);
+
+        Page<CommentDetailsDTO> dtoPage = commentsPage.map(comment -> {
+            long likesCount = commentLikeRepository.countByCommentId(comment.getId());
+            boolean likedByCurrentUser = (loggedInUser != null) &&
+                    commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId()).isPresent();
+            return new CommentDetailsDTO(comment, likesCount, likedByCurrentUser);
+        });
+
+        return new PageResponseDTO<>(dtoPage);
     }
 
     @Transactional

@@ -2,6 +2,7 @@ package com.vibebooks.api.controller;
 
 import com.vibebooks.api.dto.CommentCreationDTO;
 import com.vibebooks.api.dto.CommentDetailsDTO;
+import com.vibebooks.api.dto.PageResponseDTO;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.service.CommentService;
 import jakarta.validation.Valid;
@@ -10,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
 
-import java.util.List;
 import java.util.UUID;
 
 import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
@@ -37,11 +40,13 @@ public class CommentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CommentDetailsDTO>> listCommentsByBook(
+    public ResponseEntity<PageResponseDTO<CommentDetailsDTO>> listCommentsByBook(
             @RequestParam(value = "bookId") UUID bookId,
-            @AuthenticationPrincipal User loggedInUser) {
-        var dtos = commentService.findCommentsByBookId(bookId, loggedInUser);
-        return ResponseEntity.ok(dtos);
+            @AuthenticationPrincipal User loggedInUser,
+            @PageableDefault(size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    )   {
+        var dtoPage = commentService.findCommentsByBookId(bookId, loggedInUser, pageable);
+        return ResponseEntity.ok(dtoPage);
     }
 
     @DeleteMapping("/{id}")
