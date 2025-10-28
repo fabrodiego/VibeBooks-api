@@ -29,6 +29,7 @@ public class UserBookStatus {
     private Book book;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status")
     private ReadingStatus status = ReadingStatus.WANT_TO_READ;
 
@@ -36,6 +37,7 @@ public class UserBookStatus {
     private boolean saved = false;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "sentiment")
     private BookSentiment sentiment;
 
