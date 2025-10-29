@@ -9,11 +9,22 @@ public record BookDetailsDTO(
         String author,
         String isbn,
         Integer publicationYear,
-        String coverImageUrl
+        String coverImageUrl,
+        long likesCount,
+        boolean likedByCurrentUser
 ) {
 
     // An additional constructor to make it easier to convert the Book entity to this DTO.
-    public BookDetailsDTO(Book book) {
-        this(book.getId(), book.getTitle(), book.getAuthor(), book.getIsbn(),  book.getPublicationYear(), book.getCoverImageUrl());
+    public BookDetailsDTO(Book book, long likesCount, boolean likedByCurrentUser) {
+        this(
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor(),
+                book.getIsbn(),
+                book.getPublicationYear(),
+                book.getCoverImageUrl(),
+                likesCount,
+                likedByCurrentUser
+        );
     }
 }

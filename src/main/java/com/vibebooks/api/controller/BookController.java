@@ -31,25 +31,40 @@ public class BookController {
     private final BookService bookService;
 
     @GetMapping
-    public ResponseEntity<Page<BookDetailsDTO>> listBooks(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(bookService.listAllBooks(pageable));
+    public ResponseEntity<Page<BookDetailsDTO>> listBooks(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
+        return ResponseEntity.ok(bookService.listAllBooks(pageable, loggedInUser));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookDetailsDTO> getBookById(@PathVariable UUID id) {
-        return ResponseEntity.ok(bookService.findBookById(id));
+    public ResponseEntity<BookDetailsDTO> getBookById(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
+        return ResponseEntity.ok(bookService.findBookById(id, loggedInUser));
     }
 
     @PostMapping
-    public ResponseEntity<BookDetailsDTO> createBook(@RequestBody @Valid BookIsbnDTO dto, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<BookDetailsDTO> createBook(
+            @RequestBody @Valid BookIsbnDTO dto,
+            UriComponentsBuilder uriBuilder
+    ) {
         var newBook = bookService.createBook(dto);
         var uri = uriBuilder.path(API_PREFIX + "/books/{id}").buildAndExpand(newBook.getId()).toUri();
-        return ResponseEntity.created(uri).body(new BookDetailsDTO(newBook));
+        long initialLikes = 0;
+        boolean likedByUser = false;
+        return ResponseEntity.created(uri).body(new BookDetailsDTO(newBook, initialLikes, likedByUser));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BookDetailsDTO> updateBook(@PathVariable UUID id, @RequestBody @Valid BookCreationDTO dto) {
-        var updatedBook = bookService.updateBook(id, dto);
+    public ResponseEntity<BookDetailsDTO> updateBook(
+            @PathVariable UUID id,
+            @RequestBody @Valid BookCreationDTO dto,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
+        var updatedBook = bookService.updateBook(id, dto, loggedInUser);
         return ResponseEntity.ok(updatedBook);
     }
 
@@ -62,7 +77,10 @@ public class BookController {
     // --- Endpoints (Book Interactions) ---
 
     @PostMapping("/{id}/like")
-    public ResponseEntity<BookLikeResponseDTO> likeOrUnlikeBook(@PathVariable UUID id, @AuthenticationPrincipal User loggedInUser) {
+    public ResponseEntity<BookLikeResponseDTO> likeOrUnlikeBook(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
         var bookStatus = bookService.likeOrUnlikeBook(id, loggedInUser);
         long totalLikes = bookService.countLikesForBook(id);
         return ResponseEntity.ok(new BookLikeResponseDTO(bookStatus.isLiked(), totalLikes));
@@ -80,8 +98,9 @@ public class BookController {
     @GetMapping("/search")
     public ResponseEntity<Page<BookDetailsDTO>> searchBooks(
             @RequestParam("query") String query,
-            @PageableDefault() Pageable pageable) {
-
-        return ResponseEntity.ok(bookService.searchBooks(query, pageable));
+            @PageableDefault() Pageable pageable,
+            @AuthenticationPrincipal User loggedInUser
+    ) {
+        return ResponseEntity.ok(bookService.searchBooks(query, pageable, loggedInUser));
     }
 }

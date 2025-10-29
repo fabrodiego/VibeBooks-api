@@ -38,20 +38,26 @@ public class BookService {
 
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:%s&key=%s";
 
-
     private static final String BOOK_NOT_FOUND = "Book not found";
 
-
     @Transactional(readOnly = true)
-    public Page<BookDetailsDTO> listAllBooks(Pageable pageable) {
-        return bookRepository.findAll(pageable)
-                .map(BookDetailsDTO::new);
+    public Page<BookDetailsDTO> listAllBooks(Pageable pageable, User loggedInUser) {
+        Page<Book> bookPage = bookRepository.findAll(pageable);
+        return bookPage.map(book -> {
+            long totalLikes = countLikesForBook(book.getId());
+            boolean likedByUser = isBookLikedByUser(book.getId(), loggedInUser);
+            return new BookDetailsDTO(book, totalLikes, likedByUser);
+        });
     }
 
     @Transactional(readOnly = true)
-    public BookDetailsDTO findBookById(UUID id) {
+    public BookDetailsDTO findBookById(UUID id, User loggedInUser) {
         return bookRepository.findById(id)
-                .map(BookDetailsDTO::new)
+                .map(book -> {
+                    long totalLikes = countLikesForBook(book.getId());
+                    boolean likedByUser = isBookLikedByUser(id, loggedInUser);
+                    return new BookDetailsDTO(book, totalLikes, likedByUser);
+                })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, BOOK_NOT_FOUND));
     }
 
@@ -61,7 +67,6 @@ public class BookService {
         if (bookRepository.existsByIsbn(dto.isbn())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Book with this ISBN already exists...");
         }
-
         var volumeInfo = fetchVolumeInfoFromGoogle(dto.isbn());
 
         var book = Book.fromGoogleVolumeInfo(volumeInfo, dto.isbn());
@@ -70,11 +75,13 @@ public class BookService {
     }
 
     @Transactional
-    public BookDetailsDTO updateBook(UUID id, BookCreationDTO dto) {
+    public BookDetailsDTO updateBook(UUID id, BookCreationDTO dto, User loggedInUser) {
         var book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, BOOK_NOT_FOUND));
         book.updateInformation(dto);
-        return new BookDetailsDTO(book);
+        long totalLikes = countLikesForBook(id);
+        boolean likedByUser = isBookLikedByUser(id, loggedInUser);
+        return new BookDetailsDTO(book, totalLikes, likedByUser);
     }
 
     @Transactional
@@ -82,17 +89,16 @@ public class BookService {
         if (!bookRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, BOOK_NOT_FOUND);
         }
+        userBookStatusRepository.deleteByBookId(id);
         bookRepository.deleteById(id);
     }
 
     @Transactional
     public UserBookStatus updateBookStatus(UUID bookId, User loggedInUser, BookStatusUpdateDTO dto) {
         var bookStatus = findOrCreateUserBookStatus(bookId, loggedInUser);
-
         if (dto.status() != null) {
             bookStatus.setStatus(dto.status());
         }
-
         if (dto.sentiment() != null) {
             if (bookStatus.getStatus() == ReadingStatus.WANT_TO_READ) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only set a sentiment for books you are reading or have already read.");
@@ -105,7 +111,6 @@ public class BookService {
     @Transactional
     public UserBookStatus likeOrUnlikeBook(UUID bookId, User loggedInUser) {
         var bookStatus = findOrCreateUserBookStatus(bookId, loggedInUser);
-
         bookStatus.setLiked(!bookStatus.isLiked());
         return userBookStatusRepository.saveAndFlush(bookStatus);
     }
@@ -113,6 +118,16 @@ public class BookService {
     @Transactional(readOnly = true)
     public long countLikesForBook(UUID bookId) {
         return userBookStatusRepository.countByBookIdAndLikedIsTrue(bookId);
+    }
+
+    private boolean isBookLikedByUser(UUID bookId, User loggedInUser) {
+        if (loggedInUser == null) {
+            return false;
+        }
+        var statusId = new UserBookStatusId(loggedInUser.getId(), bookId);
+        return userBookStatusRepository.findById(statusId)
+                .map(UserBookStatus::isLiked)
+                .orElse(false);
     }
 
     private Book getReferenceById(UUID id) {
@@ -125,21 +140,24 @@ public class BookService {
     private UserBookStatus findOrCreateUserBookStatus(UUID bookId, User user) {
         var book = getReferenceById(bookId);
         var statusId = UserBookStatusId.of(user, book);
-
         return userBookStatusRepository.findById(statusId)
                 .orElseGet(() -> {
                     var newStatus = new UserBookStatus();
                     newStatus.setId(statusId);
                     newStatus.setUser(user);
                     newStatus.setBook(book);
-                    return newStatus;
+                    return userBookStatusRepository.save(newStatus);
                 });
     }
 
     @Transactional(readOnly = true)
-    public Page<BookDetailsDTO> searchBooks(String query, Pageable pageable) {
-        return bookRepository.findByTitleContainingIgnoreCase(query, pageable)
-                .map(BookDetailsDTO::new);
+    public Page<BookDetailsDTO> searchBooks(String query, Pageable pageable, User loggedInUser) {
+        Page<Book> bookPage = bookRepository.findByTitleContainingIgnoreCase(query, pageable);
+        return bookPage.map(book -> {
+            long totalLikes = countLikesForBook(book.getId());
+            boolean likedByUser = isBookLikedByUser(book.getId(), loggedInUser);
+            return new BookDetailsDTO(book, totalLikes, likedByUser);
+        });
     }
 
     private VolumeInfo fetchVolumeInfoFromGoogle(String isbn) {
