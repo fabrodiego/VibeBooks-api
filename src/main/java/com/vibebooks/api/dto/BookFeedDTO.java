@@ -14,15 +14,19 @@ public record BookFeedDTO(
         String author,
         Integer publicationYear,
         String coverImageUrl,
+        long likesCount,
+        boolean likedByCurrentUser,
         List<CommentDetailsDTO> comments
 ) {
-    public BookFeedDTO(Book book, List<CommentDetailsDTO> comments) {
+    public BookFeedDTO(Book book, List<CommentDetailsDTO> comments, long likesCount, boolean likedByCurrentUser) {
         this(
                 book.getId(),
                 book.getTitle(),
                 book.getAuthor(),
                 book.getPublicationYear(),
                 book.getCoverImageUrl(),
+                likesCount,
+                likedByCurrentUser,
                 comments
         );
     }
