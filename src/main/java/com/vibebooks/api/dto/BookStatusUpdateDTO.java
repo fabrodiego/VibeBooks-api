@@ -15,14 +15,4 @@ public record BookStatusUpdateDTO(
         ReadingStatus status,
         BookSentiment sentiment
 ) {
-    /**
-     * Validates that at least one field (status or sentiment) is provided.
-     *
-     * @throws IllegalArgumentException if both fields are null
-     */
-    public BookStatusUpdateDTO {
-        if (status == null && sentiment == null) {
-            throw new IllegalArgumentException("At least one field (status or sentiment) must be provided.");
-        }
-    }
 }

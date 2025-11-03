@@ -162,16 +162,23 @@ public class BookService {
     public UserBookStatus updateBookStatus(UUID bookId, User loggedInUser, BookStatusUpdateDTO dto) {
         var bookStatus = getOrCreateUserBookStatus(bookId, loggedInUser);
 
-        if (dto.status() != null) {
-            bookStatus.setStatus(dto.status());
-        }
+        bookStatus.setStatus(dto.status());
 
         if (dto.sentiment() != null) {
-            if (bookStatus.getStatus() == ReadingStatus.WANT_TO_READ) {
+            ReadingStatus currentStatus = bookStatus.getStatus();
+
+            if (currentStatus == null || currentStatus == ReadingStatus.WANT_TO_READ) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only set a sentiment for books you are reading or have already read.");
             }
             bookStatus.setSentiment(dto.sentiment());
+        } else {
+            bookStatus.setSentiment(null);
         }
+
+        if (bookStatus.getStatus() == null || bookStatus.getStatus() == ReadingStatus.WANT_TO_READ) {
+            bookStatus.setSentiment(null);
+        }
+
         return userBookStatusRepository.saveAndFlush(bookStatus);
     }
 
