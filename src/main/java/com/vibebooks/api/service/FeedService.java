@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service that provides the main user feed with books, comments, and interactions.
+ */
 @Service
 @RequiredArgsConstructor
 public class FeedService {
@@ -28,6 +31,14 @@ public class FeedService {
     private final CommentLikeRepository commentLikeRepository;
     private final UserBookStatusRepository userBookStatusRepository;
 
+    /**
+     * Returns a paginated list of books for the user feed,
+     * including likes, comments, reading status, and sentiment.
+     *
+     * @param pageable Pagination config
+     * @param loggedInUser Current authenticated user
+     * @return Paginated book feed with personalized data
+     */
     @Transactional(readOnly = true)
     public PageResponseDTO<BookFeedDTO> getBookFeed(Pageable pageable, User loggedInUser) {
         Page<Book> booksPage = bookRepository.findAll(pageable);
@@ -56,7 +67,19 @@ public class FeedService {
                             .map(UserBookStatus::isLiked)
                             .orElse(false);
 
-            return new BookFeedDTO(book, bookComments, bookLikesCount, bookLikedByUser);
+            ReadingStatus userStatus = (loggedInUser != null)
+                    ? userBookStatusRepository.findById(new UserBookStatusId(loggedInUser.getId(), book.getId()))
+                    .map(UserBookStatus::getStatus)
+                    .orElse(null)
+                    : null;
+
+            BookSentiment userSentiment = (loggedInUser != null)
+                    ? userBookStatusRepository.findById(new UserBookStatusId(loggedInUser.getId(), book.getId()))
+                    .map(UserBookStatus::getSentiment)
+                    .orElse(null)
+                    : null;
+
+            return new BookFeedDTO(book, bookComments, bookLikesCount, bookLikedByUser, userStatus, userSentiment);
         });
 
         return new PageResponseDTO<>(feedDtoPage);

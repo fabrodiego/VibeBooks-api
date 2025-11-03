@@ -5,5 +5,8 @@ public enum BookSentiment {
     FUN,
     EMOTIONAL,
     TENSE,
-    INFORMATIVE
+    INFORMATIVE,
+    BORING,
+    CONFUSING,
+    MOTIVATIONAL
 }

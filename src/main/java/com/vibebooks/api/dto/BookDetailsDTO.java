@@ -1,8 +1,14 @@
 package com.vibebooks.api.dto;
 
 import com.vibebooks.api.model.Book;
+import com.vibebooks.api.model.BookSentiment;
+import com.vibebooks.api.model.ReadingStatus;
+
 import java.util.UUID;
 
+/**
+ * Represents detailed book information including user-specific data.
+ */
 public record BookDetailsDTO(
         UUID id,
         String title,
@@ -11,11 +17,20 @@ public record BookDetailsDTO(
         Integer publicationYear,
         String coverImageUrl,
         long likesCount,
-        boolean likedByCurrentUser
+        boolean likedByCurrentUser,
+        ReadingStatus status,
+        BookSentiment sentiment
 ) {
-
-    // An additional constructor to make it easier to convert the Book entity to this DTO.
-    public BookDetailsDTO(Book book, long likesCount, boolean likedByCurrentUser) {
+    /**
+     * Builds a detailed book DTO from a {@link Book} entity.
+     *
+     * @param book Book entity
+     * @param likesCount Total number of likes
+     * @param likedByCurrentUser Whether the user liked the book
+     * @param status User reading status
+     * @param sentiment User sentiment about the book
+     */
+    public BookDetailsDTO(Book book, long likesCount, boolean likedByCurrentUser, ReadingStatus status, BookSentiment sentiment) {
         this(
                 book.getId(),
                 book.getTitle(),
@@ -24,7 +39,9 @@ public record BookDetailsDTO(
                 book.getPublicationYear(),
                 book.getCoverImageUrl(),
                 likesCount,
-                likedByCurrentUser
+                likedByCurrentUser,
+                status,
+                sentiment
         );
     }
 }
