@@ -1,6 +1,7 @@
 package com.vibebooks.api.controller;
 
 import com.vibebooks.api.dto.*;
+import com.vibebooks.api.model.BookSentiment;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.service.BookService;
 import jakarta.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.vibebooks.api.util.ApiConstants.API_PREFIX;
@@ -73,10 +76,25 @@ public class BookController {
     ) {
         var newBook = bookService.createBook(dto);
         var uri = uriBuilder.path(API_PREFIX + "/books/{id}").buildAndExpand(newBook.getId()).toUri();
+
         long initialLikes = 0;
         boolean likedByUser = false;
-        return ResponseEntity.created(uri)
-                .body(new BookDetailsDTO(newBook, initialLikes, likedByUser, null, null));
+
+        Map<BookSentiment, Long> sentimentsCounts = new EnumMap<>(BookSentiment.class);
+        for (BookSentiment s : BookSentiment.values()) {
+            sentimentsCounts.put(s, 0L);
+        }
+
+        var bookDetails = new BookDetailsDTO(
+                newBook,
+                initialLikes,
+                likedByUser,
+                null,
+                null,
+                sentimentsCounts
+        );
+
+        return ResponseEntity.created(uri).body(bookDetails);
     }
 
     /**

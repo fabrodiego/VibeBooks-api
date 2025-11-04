@@ -4,6 +4,7 @@ import com.vibebooks.api.dto.BookCreationDTO;
 import com.vibebooks.api.dto.BookDetailsDTO;
 import com.vibebooks.api.dto.BookIsbnDTO;
 import com.vibebooks.api.dto.BookStatusUpdateDTO;
+import com.vibebooks.api.dto.SentimentCountDTO;
 import com.vibebooks.api.dto.google.GoogleBooksResponse;
 import com.vibebooks.api.dto.google.VolumeInfo;
 import com.vibebooks.api.model.*;
@@ -19,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,23 +76,7 @@ public class BookService {
     @Transactional(readOnly = true)
     public BookDetailsDTO findBookById(UUID id, User loggedInUser) {
         return bookRepository.findById(id)
-                .map(book -> {
-                    long totalLikes = countLikesForBook(book.getId());
-                    boolean likedByUser = isBookLikedByUser(id, loggedInUser);
-                    ReadingStatus userStatus = null;
-                    BookSentiment userSentiment = null;
-
-                    if (loggedInUser != null) {
-                        var statusId = new UserBookStatusId(loggedInUser.getId(), id);
-                        var userBookStatus = userBookStatusRepository.findById(statusId);
-                        if (userBookStatus.isPresent()) {
-                            userStatus = userBookStatus.get().getStatus();
-                            userSentiment = userBookStatus.get().getSentiment();
-                        }
-                    }
-
-                    return new BookDetailsDTO(book, totalLikes, likedByUser, userStatus, userSentiment);
-                })
+                .map(book -> toBookDetailsDTO(book, loggedInUser))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, BOOK_NOT_FOUND));
     }
 
@@ -123,16 +111,9 @@ public class BookService {
     public BookDetailsDTO updateBook(UUID id, BookCreationDTO dto, User loggedInUser) {
         var book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, BOOK_NOT_FOUND));
-
         book.updateInformation(dto);
 
-        long totalLikes = countLikesForBook(id);
-        boolean likedByUser = isBookLikedByUser(id, loggedInUser);
-        Optional<UserBookStatus> userBookStatus = getUserBookStatus(id, loggedInUser);
-        ReadingStatus status = userBookStatus.map(UserBookStatus::getStatus).orElse(null);
-        BookSentiment sentiment = userBookStatus.map(UserBookStatus::getSentiment).orElse(null);
-
-        return new BookDetailsDTO(book, totalLikes, likedByUser, status, sentiment);
+        return toBookDetailsDTO(book, loggedInUser);
     }
 
     /**
@@ -301,8 +282,14 @@ public class BookService {
         Optional<UserBookStatus> userBookStatus = getUserBookStatus(book.getId(), loggedInUser);
         ReadingStatus status = userBookStatus.map(UserBookStatus::getStatus).orElse(null);
         BookSentiment sentiment = userBookStatus.map(UserBookStatus::getSentiment).orElse(null);
+        Map<BookSentiment, Long> sentimentsCounts = new EnumMap<>(BookSentiment.class);
+        for (BookSentiment s : BookSentiment.values()) {
+            sentimentsCounts.put(s, 0L);
+        }
+        List<SentimentCountDTO> countsFromDb = userBookStatusRepository.countSentimentsByBookId(book.getId());
+        countsFromDb.forEach(dto -> sentimentsCounts.put(dto.sentiment(), dto.count()));
 
-        return new BookDetailsDTO(book, totalLikes, likedByUser, status, sentiment);
+        return new BookDetailsDTO(book, totalLikes, likedByUser, status, sentiment, sentimentsCounts);
     }
 
     /**

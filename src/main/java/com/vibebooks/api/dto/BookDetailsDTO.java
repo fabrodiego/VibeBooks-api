@@ -3,7 +3,7 @@ package com.vibebooks.api.dto;
 import com.vibebooks.api.model.Book;
 import com.vibebooks.api.model.BookSentiment;
 import com.vibebooks.api.model.ReadingStatus;
-
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -19,7 +19,8 @@ public record BookDetailsDTO(
         long likesCount,
         boolean likedByCurrentUser,
         ReadingStatus status,
-        BookSentiment sentiment
+        BookSentiment sentiment,
+        Map<BookSentiment, Long> sentimentCounts
 ) {
     /**
      * Builds a detailed book DTO from a {@link Book} entity.
@@ -30,7 +31,7 @@ public record BookDetailsDTO(
      * @param status User reading status
      * @param sentiment User sentiment about the book
      */
-    public BookDetailsDTO(Book book, long likesCount, boolean likedByCurrentUser, ReadingStatus status, BookSentiment sentiment) {
+    public BookDetailsDTO(Book book, long likesCount, boolean likedByCurrentUser, ReadingStatus status, BookSentiment sentiment, Map<BookSentiment, Long> sentimentCounts) {
         this(
                 book.getId(),
                 book.getTitle(),
@@ -41,7 +42,8 @@ public record BookDetailsDTO(
                 likesCount,
                 likedByCurrentUser,
                 status,
-                sentiment
+                sentiment,
+                sentimentCounts
         );
     }
 }
