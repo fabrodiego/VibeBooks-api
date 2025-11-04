@@ -5,6 +5,7 @@ import com.vibebooks.api.model.BookSentiment;
 import com.vibebooks.api.model.ReadingStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -21,7 +22,8 @@ public record BookFeedDTO(
         boolean likedByCurrentUser,
         ReadingStatus status,
         BookSentiment sentiment,
-        List<CommentDetailsDTO> comments
+        List<CommentDetailsDTO> comments,
+        Map<BookSentiment, Long> sentimentCounts
 ) {
     /**
      * Builds a BookFeedDTO from a Book entity and additional data.
@@ -34,7 +36,7 @@ public record BookFeedDTO(
      * @param sentiment User sentiment for the book
      */
     public BookFeedDTO(Book book, List<CommentDetailsDTO> comments, long likesCount, boolean likedByCurrentUser,
-                       ReadingStatus status, BookSentiment sentiment) {
+                       ReadingStatus status, BookSentiment sentiment, Map<BookSentiment, Long> sentimentCounts) {
         this(
                 book.getId(),
                 book.getTitle(),
@@ -45,7 +47,8 @@ public record BookFeedDTO(
                 likedByCurrentUser,
                 status,
                 sentiment,
-                comments
+                comments,
+                sentimentCounts
         );
     }
 }

@@ -3,6 +3,7 @@ package com.vibebooks.api.service;
 import com.vibebooks.api.dto.BookFeedDTO;
 import com.vibebooks.api.dto.CommentDetailsDTO;
 import com.vibebooks.api.dto.PageResponseDTO;
+import com.vibebooks.api.dto.SentimentCountDTO;
 import com.vibebooks.api.model.*;
 import com.vibebooks.api.repository.BookRepository;
 import com.vibebooks.api.repository.CommentLikeRepository;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -79,7 +81,17 @@ public class FeedService {
                     .orElse(null)
                     : null;
 
-            return new BookFeedDTO(book, bookComments, bookLikesCount, bookLikedByUser, userStatus, userSentiment);
+            Map<BookSentiment, Long> sentimentCounts = new EnumMap<>(BookSentiment.class);
+            for (BookSentiment s : BookSentiment.values()) {
+                sentimentCounts.put(s, 0L); // L = long
+            }
+
+            List<SentimentCountDTO> countsFromDb = userBookStatusRepository.countSentimentsByBookId(book.getId());
+
+            countsFromDb.forEach(dto -> sentimentCounts.put(dto.sentiment(), dto.count()));
+
+
+            return new BookFeedDTO(book, bookComments, bookLikesCount, bookLikedByUser, userStatus, userSentiment, sentimentCounts);
         });
 
         return new PageResponseDTO<>(feedDtoPage);
