@@ -99,11 +99,15 @@ public class Book {
         }
 
         if (volumeInfo.imageLinks() != null && volumeInfo.imageLinks().thumbnail() != null) {
-            book.setCoverImageUrl(volumeInfo.imageLinks().thumbnail());
+            String coverUrl = volumeInfo.imageLinks().thumbnail();
+            if (coverUrl.startsWith("http://")) {
+                coverUrl = coverUrl.replaceFirst("http://", "https://");
+            }
+
+            book.setCoverImageUrl(coverUrl);
         } else {
             book.setCoverImageUrl("https://covers.openlibrary.org/b/isbn/" + isbn + "-L.jpg");
         }
-
         return book;
     }
 }
