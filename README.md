@@ -1,74 +1,100 @@
 # VibeBooks API 📚✨
 
-Welcome to the VibeBooks API, a social network for book lovers! This is the complete backend for the application, built with Java and Spring Boot, designed to be robust, secure, and scalable.
+[![Java](https://img.shields.io/badge/Java-21-blue?logo=openjdk&logoColor=white)](https://www.java.com)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen?logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.10-blue?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Frontend](https://img.shields.io/badge/Frontend-Angular-red)](https://github.com/fabrodiego/VibeBooks-frontend)
+
+[Versão em Português (README.pt-br.md)](README.pt-br.md)
 
 ## 🚀 About The Project
 
 This is a full-stack portfolio project, developed as part of academic studies.
 
-VibeBooks was conceived with the goal of connecting people through the most personal dimension of reading: **feelings**. More than just a review platform, the idea is to create a community where users can discover new books and new friends based on the "vibe" and emotions that a work sparked in other readers. It functions like an "Instagram for books," where the focus is not just on what you read, but how you felt while reading it.
+VibeBooks was conceived with the goal of connecting people through the most personal dimension of reading: **feelings**. More than just a review platform, the idea is to create a community where users can discover new books based on the "vibe" and emotions that a work sparked in other readers. It functions like an "Instagram for books," where the focus is not just on *what* you read, but *how* you felt while reading it.
+
+This repository contains the complete backend (API) for the application. The **Frontend (Angular)** can be found here: [github.com/fabrodiego/VibeBooks-frontend](https://github.com/fabrodiego/VibeBooks-frontend).
 
 ---
 
 ## ✨ Implemented Features
 
-* **Security & Authentication with Roles:**
-    * **Current Logic:** The system features a complete registration and login flow using JWT Tokens. All registered users are assigned the default `USER` role.
-    * **Future Vision:** A `MODERATOR` role will be implemented. This role will have exclusive permissions to manage the global book catalog, such as editing (`PUT`) and deleting (`DELETE`) any book, ensuring the platform's data quality.
-
-* **Book Discovery Feed:**
-    * **Current Logic:** The main `GET /api/feed` endpoint provides a paginated list of books for discovery, displaying the most recently added books and optimized to prevent the N+1 problem.
-    * **Future Vision:** The logic will be enhanced to include a recommendation algorithm, suggesting books based on the user's categories, sentiments, and interactions.
-
-* **Book Management (CRUD with Permissions):**
-    * **Current Logic:** Currently, any authenticated user (`USER`) can perform all CRUD operations (create, update, and delete) on books.
-    * **Future Vision:** Book management will be enhanced with the following rules:
-        * **Creation (`POST`):** Any `USER` will be able to register a new book on the platform by providing only its **ISBN**. The API will integrate with the **Google Books API** to automatically fetch and populate all other details (title, author, year, cover).
-        * **Update & Deletion (`PUT`, `DELETE`):** These operations will become restricted and executable only by users with the `MODERATOR` role.
-
+* **Security:** Complete registration and login flow using **JWT (JSON Web Tokens)** and Spring Security. All endpoints are protected based on roles (`USER_ROLE`).
+* **Book Management (Google API Integration):**
+    * Users can add new books to the platform by providing only an **ISBN**.
+    * The API automatically queries the **Google Books API** to fetch and save book details (title, author, cover, etc.).
+* **Discovery Feed:** A main paginated endpoint (`GET /api/feed`) for book discovery, optimized to prevent N+1 problems.
+* **Community "Vibe" Aggregation:**
+    * The API calculates and returns the total count for **each sentiment** (e.g., `INSPIRING: 12`, `TENSE: 5`) for every book.
+    * This is the core feature that allows the frontend to show which books match the "Vibe" the user is looking for.
 * **Social Interactions:**
-    * **Comments:** Users can comment on books and delete their own comments.
-    * **Likes:** Users can like/unlike books and comments.
-    * **Reading Shelf:** Users can mark books with a status (`WANT_TO_READ`, `READING`, `READ`) and associate a sentiment.
-    * **Followers System:** Users can follow and unfollow others.
+    * **Personal Shelf:** Users can set a status (`WANT_TO_READ`, `READING`, `READ`) and a personal **Sentiment** for any book.
+    * **Likes:** Users can like/unlike both books and comments.
+    * **Comments:** Full comment system for books.
+    * **Follower System:** Users can follow and unfollow other users.
+
+## 🔮 Future Vision (Next Steps)
+
+* **Moderator Management:** Implementation of a `MODERATOR` role with exclusive permissions to edit (`PUT`) or delete (`DELETE`) books, ensuring data quality.
+* **Recommendation Algorithm:** Enhance the feed to suggest books based on the user's past sentiments and interactions.
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Backend:** Java 21, Spring Boot 3
-* **Security:** Spring Security, JWT (JSON Web Tokens)
-* **Database:** Spring Data JPA, Hibernate, PostgreSQL
-* **Build:** Maven
-* **API Documentation:** SpringDoc (Swagger/OpenAPI)
-* **Testing:** JUnit 5, MockMvc, H2 Database
-* **Utilities:** Lombok
+* **Core:**
+    * Java: `21`
+    * Spring Boot: `3.5.5`
+    * Spring Security & JWT
+* **Database:**
+    * Spring Data JPA & Hibernate
+    * PostgreSQL: `16.10`
+* **API & Docs:**
+    * SpringDoc (Swagger/OpenAPI)
+* **Build & Utilities:**
+    * Maven
+    * Lombok
+* **Testing:**
+    * JUnit 5, MockMvc, H2 Database
 
 ---
 
 ## 📖 API Documentation
 
-The complete and interactive API documentation, generated with Swagger, is available while the application is running locally at the following address:
+The complete and interactive API documentation (Swagger) is available when the `dev` profile is running. It can be accessed at:
 
 [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 
 ---
 
-## ⚙️ How to Run Locally
+## ⚙️ Running Locally
 
-1.  **Prerequisites:**
-    * JDK 21 or higher.
-    * Maven 3.8 or higher.
-    * A running PostgreSQL instance.
+### 1. Prerequisites
+* JDK 21 or higher.
+* Maven 3.8 or higher.
+* A running PostgreSQL instance.
 
-2.  **Configuration:**
-    * Clone the repository.
-    * Create a file `src/main/resources/application-dev.properties`.
-    * Fill this file with your local database credentials (the `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` variables).
+### 2. Configuration
+1.  Clone the repository.
+2.  Create a file named `src/main/resources/application-dev.properties`.
+3.  Fill this file with your database credentials and a JWT secret. This profile (`dev`) is configured to run on port `8081`.
 
-3.  **Execution:**
-    * Open a terminal in the project root and run the command:
-        ```bash
-        ./mvnw spring-boot:run
-        ```
-    * The API will be available at `http://localhost:8080` (or the port you configured).
+    ```properties
+    # Port Configuration (Dev Environment)
+    server.port=8081
+
+    # PostgreSQL Configuration
+    DB_URL=jdbc:postgresql://localhost:5432/vibebooks_db
+    DB_USERNAME=your_postgres_user
+    DB_PASSWORD=your_postgres_password
+
+    # Secret to sign JWT tokens
+    JWT_SECRET=your_super_long_secret_key_for_jwt
+    ```
+
+### 3. Execution
+* Open a terminal in the project root and run the command to activate the `dev` profile:
+    ```bash
+    ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+    ```
+* The API will be available at `http://localhost:8081`. (The default/prod profile runs on port `8080`).
