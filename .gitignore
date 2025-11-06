@@ -9,28 +9,27 @@ HELP.md
 /dataSources/
 /dataSources.local.xml
 
-# Pastas de build
+# Build folders
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# Configurações do IntelliJ
+# IntelliJ configuration
 .idea/
 *.iml
 *.ipr
 *.iws
 
-# Arquivos de ambiente / credenciais
+# Environment files / credentials
 application-dev.properties
 *.env
-.env.local
-.env.*
+pgdata/
 
-# Logs e arquivos temporários
+# Logs and temp files
 *.log
 *.tmp
 
-# Arquivos do sistema
+# System files
 .DS_Store
 Thumbs.db
