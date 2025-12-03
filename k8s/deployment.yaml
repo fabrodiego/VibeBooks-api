@@ -37,6 +37,11 @@ spec:
                   key: password
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: "update"
+            - name: JWT_SECRET
+              valueFrom:
+                  secretKeyRef:
+                    name: vibebooks-jwt-secret
+                    key: jwt_secret
 ---
 apiVersion: v1
 kind: Service
