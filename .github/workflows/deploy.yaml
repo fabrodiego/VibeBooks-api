@@ -19,6 +19,11 @@ jobs:
       - name: Checkout do Código
         uses: actions/checkout@v4
 
+      - name: Definir Nome da Imagem (Lowercase)
+        run: |
+          # Pega o nome do repo, converte para minúsculo e salva na variável de ambiente
+          echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Login no GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -33,7 +38,8 @@ jobs:
 
       - name: Deploy no Kubernetes (K3s)
         run: |
-          # Aplica o arquivo que criamos na pasta k8s
+          sed -i "s|image: ghcr.io/.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g" k8s/deployment.yaml
+          
           kubectl apply -f k8s/deployment.yaml
           
           kubectl rollout restart deployment/vibebooks-api -n vibebooks-api-prod
