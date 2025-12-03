@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibebooks-api
+  namespace: vibebooks-api-prod
+  labels:
+    app: vibebooks-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vibebooks-api
+  template:
+    metadata:
+      labels:
+        app: vibebooks-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-login
+      containers:
+        - name: vibebooks-api
+          image: ghcr.io/fabrodiego/vibebooks-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service.vibebooks-api-prod.svc.cluster.local:5432/vibebooks_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: vibebooks-db-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vibebooks-db-credentials
+                  key: password
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibebooks-api-service
+  namespace: vibebooks-api-prod
+spec:
+  selector:
+    app: vibebooks-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
