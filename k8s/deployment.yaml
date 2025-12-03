@@ -42,6 +42,11 @@ spec:
                   secretKeyRef:
                     name: vibebooks-jwt-secret
                     key: jwt_secret
+            - name: GOOGLE_BOOKS_API_KEY
+              valueFrom:
+                  secretKeyRef:
+                    name: vibebooks-google-secret
+                    key: google_api_key
 ---
 apiVersion: v1
 kind: Service
