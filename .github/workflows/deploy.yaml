@@ -1,4 +1,4 @@
-name: deplot-vibebooks-api
+name: deploy-vibebooks-api
 
 on:
   push:
