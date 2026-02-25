@@ -43,12 +43,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGenericException(@SuppressWarnings("unused") Exception ex, HttpServletRequest request) {
-        var errorDTO = new ErrorResponseDTO(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred.",
-                request.getRequestURI()
-        );
+    public ResponseEntity<ErrorResponseDTO> handleGenericException(
+            // Security: do not use 'ex' to avoid leaking internal error details.
+            @SuppressWarnings("unused") Exception ex,
+            HttpServletRequest request) {
+                var errorDTO = new ErrorResponseDTO(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "An unexpected error occurred.",
+                        request.getRequestURI()
+                );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDTO);
     }
 }
