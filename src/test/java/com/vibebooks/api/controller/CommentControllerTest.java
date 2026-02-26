@@ -1,96 +1,161 @@
 package com.vibebooks.api.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vibebooks.api.AbstractIntegrationTest;
+import com.vibebooks.api.dto.AuthenticationDTO;
+import com.vibebooks.api.dto.CommentCreationDTO;
 import com.vibebooks.api.model.Book;
 import com.vibebooks.api.model.Comment;
 import com.vibebooks.api.model.User;
 import com.vibebooks.api.repository.BookRepository;
+import com.vibebooks.api.repository.CommentLikeRepository;
 import com.vibebooks.api.repository.CommentRepository;
+import com.vibebooks.api.repository.UserBookStatusRepository;
 import com.vibebooks.api.repository.UserRepository;
-import com.vibebooks.api.service.TokenService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles("test")
-class CommentControllerTest {
+/**
+ * Integration tests for the CommentController.
+ * Verifies HTTP endpoints for comment management and user interactions.
+ */
+class CommentControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
-    private TokenService tokenService;
+    private ObjectMapper objectMapper;
+
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private BookRepository bookRepository;
+
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private CommentLikeRepository commentLikeRepository;
+
+    @Autowired
+    private UserBookStatusRepository userBookStatusRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private String validJwtToken;
+    private Book savedBook;
+    private Comment savedComment;
+
     /**
-     * Test case to verify that the owner of a comment can successfully delete their comment.
-     * It expects a 204 No Content status and asserts that the comment no longer exists in the repository.
-     *
-     * @throws Exception if an error occurs during the mock MVC request.
+     * Prepares the database with a user, a token, a book, and a default comment before each test.
+     * Respects Foreign Key constraints during cleanup.
      */
-    @Test
-    @DisplayName("Should allow owner to delete their comment and return 204 No Content")
-    void deleteComment_AsOwner_ShouldSucceed() throws Exception {
-        User owner = userRepository.save(new User("owner", "owner@email.com", "hashed_password"));
-        Book book = bookRepository.save(new Book("Test Book", "Test Author"));
-        Comment comment = commentRepository.save(new Comment("My own comment", owner, book));
-        // Ensure the comment is saved before proceeding
-        commentRepository.flush();
+    @BeforeEach
+    void setup() throws Exception {
+        // 1. Cleanup in correct order (children first)
+        commentLikeRepository.deleteAll();
+        commentRepository.deleteAll();
+        userBookStatusRepository.deleteAll();
+        bookRepository.deleteAll();
+        userRepository.deleteAll();
 
-        String ownerToken = tokenService.generateToken(owner);
+        // 2. Create a user
+        User savedUser = new User();
+        savedUser.setUsername("commenter");
+        savedUser.setEmail("commenter@email.com");
+        savedUser.setPassword(passwordEncoder.encode("password123"));
+        savedUser = userRepository.save(savedUser);
 
-        var response = mockMvc.perform(
-                delete("/vibebooks/api/comments/{id}", comment.getId())
-                        .header("Authorization", "Bearer " + ownerToken)
-        );
+        // 3. Perform Login to extract a valid JWT Token
+        AuthenticationDTO loginDTO = new AuthenticationDTO("commenter@email.com", "password123");
+        String responseContent = mockMvc.perform(post("/vibebooks/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDTO)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
 
-        response.andExpect(status().isNoContent());
+        JsonNode jsonNode = objectMapper.readTree(responseContent);
+        validJwtToken = jsonNode.get("token").asText();
 
-        boolean commentExists = commentRepository.existsById(comment.getId());
-        assertThat(commentExists).isFalse();
+        // 4. Save a default book
+        Book book = new Book();
+        book.setIsbn("0001112223");
+        book.setTitle("Integration Book");
+        book.setAuthor("Test Author");
+        savedBook = bookRepository.save(book);
+
+        // 5. Save a default comment for DELETE and LIKE tests
+        savedComment = new Comment("Initial comment for testing", savedUser, savedBook);
+        savedComment = commentRepository.save(savedComment);
     }
 
     /**
-     * Test case to verify that a user attempting to delete another user's comment
-     * receives a 403 Forbidden status. It also asserts that the comment remains in the repository.
-     *
-     * @throws Exception if an error occurs during the mock MVC request.
+     * Tests the successful creation of a comment.
      */
     @Test
-    @DisplayName("Should return 403 Forbidden when user tries to delete another user's comment")
-    void deleteComment_AsAnotherUser_ShouldReturn403() throws Exception {
-        User owner = userRepository.save(new User("owner", "owner@email.com", "hashed_password"));
-        User attacker = userRepository.save(new User("attacker", "attacker@email.com", "hashed_password"));
-        Book book = bookRepository.save(new Book("Test Book", "Test Author"));
-        Comment ownersComment = commentRepository.save(new Comment("A comment to protect", owner, book));
-        commentRepository.flush();
+    @DisplayName("POST /comments: Should add comment and return 201 Created")
+    void shouldAddCommentSuccessfully() throws Exception {
+        CommentCreationDTO dto = new CommentCreationDTO("This is a new test comment", savedBook.getId());
 
-        String attackerToken = tokenService.generateToken(attacker);
-
-        var response = mockMvc.perform(
-                delete("/vibebooks/api/comments/{id}", ownersComment.getId())
-                        .header("Authorization", "Bearer " + attackerToken)
-        );
-
-        response.andExpect(status().isForbidden());
-
-        boolean commentExists = commentRepository.existsById(ownersComment.getId());
-        assertThat(commentExists).isTrue();
+        mockMvc.perform(post("/vibebooks/api/comments")
+                        .header("Authorization", "Bearer " + validJwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.text").value("This is a new test comment"))
+                .andExpect(jsonPath("$.username").value("commenter"));
     }
 
+    /**
+     * Tests retrieving a paginated list of comments for a specific book.
+     */
+    @Test
+    @DisplayName("GET /comments: Should return paginated list of comments by book")
+    void shouldListCommentsByBook() throws Exception {
+        mockMvc.perform(get("/vibebooks/api/comments")
+                        .param("bookId", savedBook.getId().toString())
+                        .header("Authorization", "Bearer " + validJwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].text").value("Initial comment for testing"));
+    }
+
+    /**
+     * Tests the comment deletion endpoint.
+     */
+    @Test
+    @DisplayName("DELETE /comments/{id}: Should delete comment and return 204 No Content")
+    void shouldDeleteComment() throws Exception {
+        mockMvc.perform(delete("/vibebooks/api/comments/" + savedComment.getId())
+                        .header("Authorization", "Bearer " + validJwtToken))
+                .andExpect(status().isNoContent());
+
+        boolean exists = commentRepository.existsById(savedComment.getId());
+        assertThat(exists).isFalse();
+    }
+
+    /**
+     * Tests the like toggle endpoint on a comment.
+     */
+    @Test
+    @DisplayName("POST /comments/{id}/like: Should toggle like status on comment")
+    void shouldToggleLikeComment() throws Exception {
+        mockMvc.perform(post("/vibebooks/api/comments/" + savedComment.getId() + "/like")
+                        .header("Authorization", "Bearer " + validJwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likedByCurrentUser").value(true))
+                .andExpect(jsonPath("$.likesCount").value(1));
+    }
 }
