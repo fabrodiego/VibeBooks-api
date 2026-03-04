@@ -3,7 +3,6 @@ package com.vibebooks.api.service;
 import com.vibebooks.api.dto.BookFeedDTO;
 import com.vibebooks.api.dto.CommentDetailsDTO;
 import com.vibebooks.api.dto.PageResponseDTO;
-import com.vibebooks.api.dto.SentimentCountDTO;
 import com.vibebooks.api.model.*;
 import com.vibebooks.api.repository.BookRepository;
 import com.vibebooks.api.repository.CommentLikeRepository;
@@ -15,14 +14,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service that provides the main user feed with books, comments, and interactions.
+ * Service responsible for generating the user feed.
+ * * Business Rule: Aggregates books, user interactions (likes, reading status, sentiments),
+ * and comments in a single paginated response. To prevent N+1 database performance issues,
+ * it strictly uses batch fetching (SQL IN clauses) and groups the data in memory.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,64 +33,78 @@ public class FeedService {
     private final UserBookStatusRepository userBookStatusRepository;
 
     /**
-     * Returns a paginated list of books for the user feed,
-     * including likes, comments, reading status, and sentiment.
+     * Retrieves a paginated feed of books tailored to the current user.
      *
-     * @param pageable Pagination config
-     * @param loggedInUser Current authenticated user
-     * @return Paginated book feed with personalized data
+     * @param pageable Pagination configuration.
+     * @param loggedInUser The currently authenticated user, or null if anonymous.
+     * @return A paginated wrapper containing the fully aggregated book feed.
      */
     @Transactional(readOnly = true)
     public PageResponseDTO<BookFeedDTO> getBookFeed(Pageable pageable, User loggedInUser) {
         Page<Book> booksPage = bookRepository.findAll(pageable);
+        List<UUID> bookIds = booksPage.getContent().stream().map(Book::getId).toList();
 
-        List<UUID> bookIds = booksPage.getContent().stream()
-                .map(Book::getId)
-                .toList();
+        if (bookIds.isEmpty()) {
+            return new PageResponseDTO<>(booksPage.map(b -> null));
+        }
+
+        Map<UUID, Long> bookLikesCount = userBookStatusRepository.countLikesByBookIdIn(bookIds).stream()
+                .collect(Collectors.toMap(UserBookStatusRepository.BookLikeCount::getBookId, UserBookStatusRepository.BookLikeCount::getCount));
+
+        Map<UUID, Map<BookSentiment, Long>> bookSentiments = new HashMap<>();
+        for (UUID id : bookIds) {
+            Map<BookSentiment, Long> initial = new EnumMap<>(BookSentiment.class);
+            for (BookSentiment s : BookSentiment.values()) initial.put(s, 0L);
+            bookSentiments.put(id, initial);
+        }
+        userBookStatusRepository.countSentimentsByBookIdIn(bookIds).forEach(agg ->
+                bookSentiments.get(agg.getBookId()).put(agg.getSentiment(), agg.getCount())
+        );
+
+        Map<UUID, UserBookStatus> userStatuses = new HashMap<>();
+        if (loggedInUser != null) {
+            userBookStatusRepository.findAllByUserIdAndBookIdIn(loggedInUser.getId(), bookIds)
+                    .forEach(status -> userStatuses.put(status.getBook().getId(), status));
+        }
 
         List<Comment> comments = commentRepository.findAllByBookIdIn(bookIds);
+        List<UUID> commentIds = comments.stream().map(Comment::getId).toList();
 
-        Map<UUID, List<CommentDetailsDTO>> commentsByBookId = comments.stream()
-                .map(comment -> {
-                    long likesCount = commentLikeRepository.countByCommentId(comment.getId());
-                    boolean likedByCurrentUser = (loggedInUser != null) &&
-                            commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), comment.getId()).isPresent();
-                    return new CommentDetailsDTO(comment, likesCount, likedByCurrentUser);
-                })
+        Map<UUID, Long> commentLikesCount = new HashMap<>();
+        Set<UUID> commentsLikedByUser = new HashSet<>();
+
+        if (!commentIds.isEmpty()) {
+            commentLikeRepository.countLikesByCommentIdIn(commentIds).forEach(agg ->
+                    commentLikesCount.put(agg.getCommentId(), agg.getCount())
+            );
+
+            if (loggedInUser != null) {
+                commentLikeRepository.findAllByUserIdAndCommentIdIn(loggedInUser.getId(), commentIds)
+                        .forEach(cl -> commentsLikedByUser.add(cl.getComment().getId()));
+            }
+        }
+
+        Map<UUID, List<CommentDetailsDTO>> commentsByBook = comments.stream()
+                .map(c -> new CommentDetailsDTO(
+                        c,
+                        commentLikesCount.getOrDefault(c.getId(), 0L),
+                        commentsLikedByUser.contains(c.getId())
+                ))
                 .collect(Collectors.groupingBy(CommentDetailsDTO::bookId));
 
         Page<BookFeedDTO> feedDtoPage = booksPage.map(book -> {
-            List<CommentDetailsDTO> bookComments = commentsByBookId.getOrDefault(book.getId(), List.of());
+            UUID bId = book.getId();
+            UserBookStatus uStatus = userStatuses.get(bId);
 
-            long bookLikesCount = userBookStatusRepository.countByBookIdAndLikedIsTrue(book.getId());
-            boolean bookLikedByUser = (loggedInUser != null) &&
-                    userBookStatusRepository.findById(new UserBookStatusId(loggedInUser.getId(), book.getId()))
-                            .map(UserBookStatus::isLiked)
-                            .orElse(false);
-
-            ReadingStatus userStatus = (loggedInUser != null)
-                    ? userBookStatusRepository.findById(new UserBookStatusId(loggedInUser.getId(), book.getId()))
-                    .map(UserBookStatus::getStatus)
-                    .orElse(null)
-                    : null;
-
-            BookSentiment userSentiment = (loggedInUser != null)
-                    ? userBookStatusRepository.findById(new UserBookStatusId(loggedInUser.getId(), book.getId()))
-                    .map(UserBookStatus::getSentiment)
-                    .orElse(null)
-                    : null;
-
-            Map<BookSentiment, Long> sentimentCounts = new EnumMap<>(BookSentiment.class);
-            for (BookSentiment s : BookSentiment.values()) {
-                sentimentCounts.put(s, 0L); // L = long
-            }
-
-            List<SentimentCountDTO> countsFromDb = userBookStatusRepository.countSentimentsByBookId(book.getId());
-
-            countsFromDb.forEach(dto -> sentimentCounts.put(dto.sentiment(), dto.count()));
-
-
-            return new BookFeedDTO(book, bookComments, bookLikesCount, bookLikedByUser, userStatus, userSentiment, sentimentCounts);
+            return new BookFeedDTO(
+                    book,
+                    commentsByBook.getOrDefault(bId, List.of()),
+                    bookLikesCount.getOrDefault(bId, 0L),
+                    uStatus != null && uStatus.isLiked(),
+                    uStatus != null ? uStatus.getStatus() : null,
+                    uStatus != null ? uStatus.getSentiment() : null,
+                    bookSentiments.get(bId)
+            );
         });
 
         return new PageResponseDTO<>(feedDtoPage);
