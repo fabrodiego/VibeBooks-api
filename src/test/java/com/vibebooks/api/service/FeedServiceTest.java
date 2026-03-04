@@ -2,7 +2,6 @@ package com.vibebooks.api.service;
 
 import com.vibebooks.api.dto.BookFeedDTO;
 import com.vibebooks.api.dto.PageResponseDTO;
-import com.vibebooks.api.dto.SentimentCountDTO;
 import com.vibebooks.api.model.*;
 import com.vibebooks.api.repository.BookRepository;
 import com.vibebooks.api.repository.CommentLikeRepository;
@@ -21,13 +20,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link FeedService}.
+ * * Business Rule Verification: Ensures that batch data aggregation (mocking projection interfaces)
+ * correctly maps to the final BookFeedDTO for both authenticated and anonymous users.
+ */
 @ExtendWith(MockitoExtension.class)
 class FeedServiceTest {
 
@@ -60,27 +63,51 @@ class FeedServiceTest {
         validComment.setId(UUID.randomUUID());
     }
 
+    /**
+     * Tests the feed generation for an authenticated user.
+     * Expects all personalized interactions (likes, status, sentiments) to be correctly mapped.
+     */
     @Test
     @DisplayName("GetFeed: Should return feed with user interactions")
     void shouldReturnFeedForAuthenticatedUser() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Book> bookPage = new PageImpl<>(List.of(validBook));
+        List<UUID> bookIds = List.of(validBook.getId());
+        List<UUID> commentIds = List.of(validComment.getId());
 
         UserBookStatus status = new UserBookStatus();
+        status.setBook(validBook);
+        status.setUser(loggedInUser);
         status.setLiked(true);
         status.setStatus(ReadingStatus.READING);
         status.setSentiment(BookSentiment.INSPIRING);
 
-        // Mocks
+        // Mocks for Book
         when(bookRepository.findAll(pageable)).thenReturn(bookPage);
-        when(commentRepository.findAllByBookIdIn(List.of(validBook.getId()))).thenReturn(List.of(validComment));
-        when(commentLikeRepository.countByCommentId(validComment.getId())).thenReturn(10L);
-        when(commentLikeRepository.findByUserIdAndCommentId(loggedInUser.getId(), validComment.getId()))
-                .thenReturn(Optional.of(new CommentLike()));
-        when(userBookStatusRepository.countByBookIdAndLikedIsTrue(validBook.getId())).thenReturn(5L);
-        when(userBookStatusRepository.findById(any(UserBookStatusId.class))).thenReturn(Optional.of(status));
-        when(userBookStatusRepository.countSentimentsByBookId(validBook.getId()))
-                .thenReturn(List.of(new SentimentCountDTO(BookSentiment.INSPIRING, 2L)));
+
+        UserBookStatusRepository.BookLikeCount bookLikeMock = mock(UserBookStatusRepository.BookLikeCount.class);
+        when(bookLikeMock.getBookId()).thenReturn(validBook.getId());
+        when(bookLikeMock.getCount()).thenReturn(5L);
+        when(userBookStatusRepository.countLikesByBookIdIn(bookIds)).thenReturn(List.of(bookLikeMock));
+
+        UserBookStatusRepository.BookSentimentAggregation sentimentMock = mock(UserBookStatusRepository.BookSentimentAggregation.class);
+        when(sentimentMock.getBookId()).thenReturn(validBook.getId());
+        when(sentimentMock.getSentiment()).thenReturn(BookSentiment.INSPIRING);
+        when(sentimentMock.getCount()).thenReturn(2L);
+        when(userBookStatusRepository.countSentimentsByBookIdIn(bookIds)).thenReturn(List.of(sentimentMock));
+
+        when(userBookStatusRepository.findAllByUserIdAndBookIdIn(loggedInUser.getId(), bookIds)).thenReturn(List.of(status));
+
+        // Mocks for Comment
+        when(commentRepository.findAllByBookIdIn(bookIds)).thenReturn(List.of(validComment));
+
+        CommentLikeRepository.CommentLikeCount commentLikeMock = mock(CommentLikeRepository.CommentLikeCount.class);
+        when(commentLikeMock.getCommentId()).thenReturn(validComment.getId());
+        when(commentLikeMock.getCount()).thenReturn(10L);
+        when(commentLikeRepository.countLikesByCommentIdIn(commentIds)).thenReturn(List.of(commentLikeMock));
+
+        CommentLike cl = new CommentLike(loggedInUser, validComment);
+        when(commentLikeRepository.findAllByUserIdAndCommentIdIn(loggedInUser.getId(), commentIds)).thenReturn(List.of(cl));
 
         PageResponseDTO<BookFeedDTO> result = feedService.getBookFeed(pageable, loggedInUser);
 
@@ -97,22 +124,30 @@ class FeedServiceTest {
         assertEquals(1, feedDTO.comments().size());
         assertEquals(10L, feedDTO.comments().getFirst().likesCount());
         assertTrue(feedDTO.comments().getFirst().likedByCurrentUser());
-
         assertEquals(2L, feedDTO.sentimentCounts().get(BookSentiment.INSPIRING));
     }
 
+    /**
+     * Tests the feed generation for an anonymous user (not logged in).
+     * Expects public data to be present, but user-specific interaction flags to be false or null.
+     */
     @Test
     @DisplayName("GetFeed: Should return feed without user interactions when not logged in")
     void shouldReturnFeedForAnonymousUser() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Book> bookPage = new PageImpl<>(List.of(validBook));
+        List<UUID> bookIds = List.of(validBook.getId());
 
         when(bookRepository.findAll(pageable)).thenReturn(bookPage);
-        when(commentRepository.findAllByBookIdIn(anyList())).thenReturn(List.of());
-        when(userBookStatusRepository.countByBookIdAndLikedIsTrue(validBook.getId())).thenReturn(3L);
-        when(userBookStatusRepository.countSentimentsByBookId(validBook.getId())).thenReturn(List.of());
 
-        // Execute with NULL user
+        UserBookStatusRepository.BookLikeCount bookLikeMock = mock(UserBookStatusRepository.BookLikeCount.class);
+        when(bookLikeMock.getBookId()).thenReturn(validBook.getId());
+        when(bookLikeMock.getCount()).thenReturn(3L);
+        when(userBookStatusRepository.countLikesByBookIdIn(bookIds)).thenReturn(List.of(bookLikeMock));
+
+        when(userBookStatusRepository.countSentimentsByBookIdIn(bookIds)).thenReturn(List.of());
+        when(commentRepository.findAllByBookIdIn(bookIds)).thenReturn(List.of());
+
         PageResponseDTO<BookFeedDTO> result = feedService.getBookFeed(pageable, null);
 
         assertNotNull(result);
