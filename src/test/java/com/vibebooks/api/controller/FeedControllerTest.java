@@ -15,8 +15,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for the FeedController.
- * Verifies the feed endpoint and data aggregation.
+ * Integration tests for the {@link FeedController}.
+ * Verifies the feed endpoint, ensuring that batch data aggregation
+ * is correctly serialized into the JSON response.
  */
 class FeedControllerTest extends AbstractIntegrationTest {
 
@@ -84,6 +85,13 @@ class FeedControllerTest extends AbstractIntegrationTest {
         commentLikeRepository.save(like);
     }
 
+    /**
+     * Tests the retrieval of the paginated feed for an authenticated user.
+     * Expects a 200 OK status and a fully populated JSON structure containing
+     * book details, user specific interactions, and aggregated sentiment counts.
+     *
+     * @throws Exception if the mock MVC request fails.
+     */
     @Test
     @DisplayName("GET /feed: Should return paginated feed with full user interactions")
     void shouldReturnFeedWithInteractions() throws Exception {
@@ -96,6 +104,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].likedByCurrentUser").value(true))
                 .andExpect(jsonPath("$.content[0].status").value(ReadingStatus.READING.name()))
                 .andExpect(jsonPath("$.content[0].sentiment").value(BookSentiment.INSPIRING.name()))
+                .andExpect(jsonPath("$.content[0].sentimentCounts.INSPIRING").value(1))
                 .andExpect(jsonPath("$.content[0].comments[0].text").value("Amazing read!"))
                 .andExpect(jsonPath("$.content[0].comments[0].likesCount").value(1));
     }
