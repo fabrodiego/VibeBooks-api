@@ -5,6 +5,9 @@ import com.vibebooks.api.AbstractIntegrationTest;
 import com.vibebooks.api.dto.AuthenticationDTO;
 import com.vibebooks.api.dto.UserCreateDTO;
 import com.vibebooks.api.model.User;
+import com.vibebooks.api.repository.CommentLikeRepository;
+import com.vibebooks.api.repository.CommentRepository;
+import com.vibebooks.api.repository.UserBookStatusRepository;
 import com.vibebooks.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,10 +37,22 @@ class AuthenticationControllerTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CommentLikeRepository commentLikeRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
+    private UserBookStatusRepository userBookStatusRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setup() {
+        commentLikeRepository.deleteAll();
+        commentRepository.deleteAll();
+        userBookStatusRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -47,14 +62,14 @@ class AuthenticationControllerTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("POST /register: Should register a user successfully")
     void shouldRegisterUserSuccessfully() throws Exception {
-        UserCreateDTO newUser = new UserCreateDTO("diego_dev", "diego@email.com", "senhaForte123");
+        UserCreateDTO newUser = new UserCreateDTO("test", "test@email.com", "hardPassword123");
 
         mockMvc.perform(post("/vibebooks/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newUser)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.username").value("diego_dev"))
-                .andExpect(jsonPath("$.email").value("diego@email.com"));
+                .andExpect(jsonPath("$.username").value("test"))
+                .andExpect(jsonPath("$.email").value("test@email.com"));
     }
 
     /**
@@ -66,11 +81,11 @@ class AuthenticationControllerTest extends AbstractIntegrationTest {
         // Prepare existing user in the database
         User existingUser = new User();
         existingUser.setUsername("user1");
-        existingUser.setEmail("teste@email.com");
+        existingUser.setEmail("test@email.com");
         existingUser.setPassword(passwordEncoder.encode("123"));
         userRepository.save(existingUser);
 
-        UserCreateDTO duplicateUser = new UserCreateDTO("user2", "teste@email.com", "senhaForte123");
+        UserCreateDTO duplicateUser = new UserCreateDTO("user2", "test@email.com", "hardPassword123");
 
         mockMvc.perform(post("/vibebooks/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,10 +102,10 @@ class AuthenticationControllerTest extends AbstractIntegrationTest {
         User user = new User();
         user.setUsername("login_user");
         user.setEmail("login@email.com");
-        user.setPassword(passwordEncoder.encode("password123"));
+        user.setPassword(passwordEncoder.encode("hardPassword123"));
         userRepository.save(user);
 
-        AuthenticationDTO loginDTO = new AuthenticationDTO("login@email.com", "password123");
+        AuthenticationDTO loginDTO = new AuthenticationDTO("login@email.com", "hardPassword123");
 
         mockMvc.perform(post("/vibebooks/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -111,7 +126,7 @@ class AuthenticationControllerTest extends AbstractIntegrationTest {
         user.setPassword(passwordEncoder.encode("password123"));
         userRepository.save(user);
 
-        AuthenticationDTO loginDTO = new AuthenticationDTO("login@email.com", "wrongpassword");
+        AuthenticationDTO loginDTO = new AuthenticationDTO("login@email.com", "hardPassword123");
 
         mockMvc.perform(post("/vibebooks/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

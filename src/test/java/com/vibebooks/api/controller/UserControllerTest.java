@@ -7,6 +7,9 @@ import com.vibebooks.api.dto.AuthenticationDTO;
 import com.vibebooks.api.dto.UserPasswordUpdateDTO;
 import com.vibebooks.api.dto.UserUpdateDTO;
 import com.vibebooks.api.model.User;
+import com.vibebooks.api.repository.CommentLikeRepository;
+import com.vibebooks.api.repository.CommentRepository;
+import com.vibebooks.api.repository.UserBookStatusRepository;
 import com.vibebooks.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +39,15 @@ class UserControllerTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CommentLikeRepository commentLikeRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
+    private UserBookStatusRepository userBookStatusRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private User savedUser;
@@ -46,6 +58,9 @@ class UserControllerTest extends AbstractIntegrationTest {
      */
     @BeforeEach
     void setup() throws Exception {
+        commentLikeRepository.deleteAll();
+        commentRepository.deleteAll();
+        userBookStatusRepository.deleteAll();
         userRepository.deleteAll();
 
         User user = new User();
