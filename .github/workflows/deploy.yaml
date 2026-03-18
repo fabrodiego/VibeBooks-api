@@ -27,7 +27,9 @@ jobs:
           cache: 'maven'
 
       - name: Run Tests (CI)
-        run: mvn clean test
+        run: |
+          chmod +x mvnw
+          ./mvnw clean test
 
       - name: Set Image Name to Lowercase
         run: |
